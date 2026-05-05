@@ -85,6 +85,10 @@
         <input id="External Website" type="url" placeholder="https://" />
       </label>
 
+      <label>TeamReach group code (optional)
+        <input id="TeamReach" type="text" placeholder="e.g. HSG2022" />
+      </label>
+
       <button class="btn btn-primary" type="submit">Save changes</button>
       <div id="status" class="form-status" hidden></div>
     </form>
@@ -101,7 +105,7 @@
     const STRING_FIELDS = [
       'Short Blurb', 'Long Description', 'Vibe / Demographics',
       'Meeting Frequency', 'Meeting Day', 'Meeting Time', 'Meeting Location',
-      'YouTube URLs', 'External Website',
+      'YouTube URLs', 'External Website', 'TeamReach',
     ];
 
     async function populateClubs() {

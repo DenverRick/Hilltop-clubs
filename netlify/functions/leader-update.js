@@ -14,6 +14,7 @@ const ALLOWED_FIELDS = new Set([
   'Vibe / Demographics',
   'YouTube URLs',
   'External Website',
+  'TeamReach',
 ]);
 
 const normalize = (s) => String(s || '').trim().toLowerCase();

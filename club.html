@@ -128,6 +128,7 @@
               <div class="club-footer-meta">
                 ${club.leaderName ? `<div>Led by <strong>${escape(club.leaderName)}</strong></div>` : ''}
                 ${club.memberCount != null ? `<div><strong>${escape(club.memberCount)}</strong> members</div>` : ''}
+                ${club.teamReach ? `<div title="Group code for the TeamReach app">TeamReach code <strong>${escape(club.teamReach)}</strong></div>` : ''}
                 ${(club.tags && club.tags.length) ? `<div class="tags">${club.tags.map((t) => `<span class="tag">${escape(t)}</span>`).join('')}</div>` : ''}
               </div>
               <div class="club-footer-actions">

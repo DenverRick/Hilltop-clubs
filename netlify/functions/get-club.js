@@ -48,6 +48,7 @@ export async function handler(event) {
       youtubeUrls,
       thumbnail: f['Thumbnail Image']?.[0]?.thumbnails?.large?.url || f['Thumbnail Image']?.[0]?.url || '',
       website: f['External Website'] || '',
+      teamReach: f['TeamReach'] || '',
       lastUpdated: f['Last Updated'] || null,
     },
   });
