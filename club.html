@@ -25,8 +25,12 @@
     const $ = (sel) => document.querySelector(sel);
     const escape = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+    // Same path-fallback as category.html — supports both ?slug= and /club/:slug
+    // even when the static preview doesn't apply Netlify's redirect rewrite.
     const params = new URLSearchParams(location.search);
-    const slug = params.get('slug') || '';
+    const pathLeaf = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '');
+    const fromPath = (pathLeaf && pathLeaf !== 'club.html') ? pathLeaf : '';
+    const slug = params.get('slug') || fromPath;
     const detail = $('#detail');
 
     function youtubeId(url) {
