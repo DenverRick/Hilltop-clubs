@@ -89,35 +89,52 @@
         catLink.href = cat ? `/category/${encodeURIComponent(cat.slug)}` : '/';
         document.title = `${club.name} — Hilltop Clubs`;
 
-        const meetingRows = [
-          ['Frequency', club.meetingFrequency],
-          ['Day', club.meetingDay],
-          ['Time', club.meetingTime],
-          ['Location', club.meetingLocation],
-        ].filter(([, v]) => v);
+        const meetingCells = [
+          ['📅', 'Frequency', club.meetingFrequency],
+          ['🗓', 'Day',       club.meetingDay],
+          ['🕐', 'Time',      club.meetingTime],
+          ['📍', 'Location',  club.meetingLocation],
+        ].filter(([, , v]) => v);
 
         const videos = (club.youtubeUrls || []).map(youtubeId).filter(Boolean);
+        const catHref = cat ? `/category/${encodeURIComponent(cat.slug)}` : '#';
 
         detail.innerHTML = `
-          <h2>${escape(club.name)}</h2>
-          ${club.blurb ? `<p style="font-size:1.1rem;color:var(--gray);">${escape(club.blurb)}</p>` : ''}
-          ${club.thumbnail ? `<img class="thumbnail" src="${escape(club.thumbnail)}" alt="" style="margin:1rem 0;" />` : ''}
-          ${meetingRows.length ? `
-            <dl class="meeting-block">
-              ${meetingRows.map(([k, v]) => `<dt>${escape(k)}</dt><dd>${escape(v)}</dd>`).join('')}
-            </dl>` : ''}
-          ${club.description ? `<div>${escape(club.description).replace(/\n/g, '<br>')}</div>` : ''}
-          ${club.vibe ? `<div class="vibe">${escape(club.vibe)}</div>` : ''}
-          ${club.leaderName ? `<p><strong>Led by:</strong> ${escape(club.leaderName)}</p>` : ''}
-          ${club.memberCount != null ? `<p><strong>Members:</strong> ${escape(club.memberCount)}</p>` : ''}
-          ${(club.tags && club.tags.length) ? `<div class="tags">${club.tags.map((t) => `<span class="tag">${escape(t)}</span>`).join('')}</div>` : ''}
-          ${videos.length ? `
-            <div class="video-grid ${videos.length > 1 ? 'has-multiple' : ''}">
-              ${videos.map((id) => `<iframe src="https://www.youtube.com/embed/${escape(id)}" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`).join('')}
-            </div>` : ''}
-          <div style="margin-top:1.5rem; display:flex; gap:0.75rem; flex-wrap:wrap;">
-            <button class="btn btn-primary" id="interest-btn" type="button">I'm interested</button>
-            ${club.website ? `<a class="btn btn-secondary" href="${escape(externalUrl(club.website))}" target="_blank" rel="noopener">Visit website</a>` : ''}
+          ${club.thumbnail ? `<img class="club-banner" src="${escape(club.thumbnail)}" alt="" />` : ''}
+          <div class="club-body">
+            ${club.category ? `<div class="club-eyebrow"><a href="${escape(catHref)}">${escape(club.category)}</a></div>` : ''}
+            <h2>${escape(club.name)}</h2>
+            ${club.blurb ? `<p class="club-blurb">${escape(club.blurb)}</p>` : ''}
+
+            ${meetingCells.length ? `
+              <div class="meeting-strip">
+                ${meetingCells.map(([icon, label, value]) => `
+                  <div class="meeting-cell">
+                    <div class="label"><span aria-hidden="true">${icon}</span>${escape(label)}</div>
+                    <div class="value">${escape(value)}</div>
+                  </div>
+                `).join('')}
+              </div>` : ''}
+
+            ${club.description ? `<div class="club-description">${escape(club.description).replace(/\n/g, '<br>')}</div>` : ''}
+            ${club.vibe ? `<div class="vibe">${escape(club.vibe)}</div>` : ''}
+
+            ${videos.length ? `
+              <div class="video-grid ${videos.length > 1 ? 'has-multiple' : ''}">
+                ${videos.map((id) => `<iframe src="https://www.youtube.com/embed/${escape(id)}" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`).join('')}
+              </div>` : ''}
+
+            <div class="club-footer">
+              <div class="club-footer-meta">
+                ${club.leaderName ? `<div>Led by <strong>${escape(club.leaderName)}</strong></div>` : ''}
+                ${club.memberCount != null ? `<div><strong>${escape(club.memberCount)}</strong> members</div>` : ''}
+                ${(club.tags && club.tags.length) ? `<div class="tags">${club.tags.map((t) => `<span class="tag">${escape(t)}</span>`).join('')}</div>` : ''}
+              </div>
+              <div class="club-footer-actions">
+                <button class="btn btn-primary" id="interest-btn" type="button">I'm interested</button>
+                ${club.website ? `<a class="btn btn-secondary" href="${escape(externalUrl(club.website))}" target="_blank" rel="noopener">Visit website</a>` : ''}
+              </div>
+            </div>
           </div>
         `;
         $('#interest-btn').addEventListener('click', onInterestClick);

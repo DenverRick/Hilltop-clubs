@@ -129,26 +129,145 @@ h3 { font-size: 1.2rem; margin: 0 0 0.5rem; }
 .club-detail {
   background: white;
   border-radius: var(--radius);
-  padding: 1.5rem;
+  padding: 0;
   box-shadow: var(--shadow);
+  overflow: hidden;
 }
-.club-detail h2 { font-size: 2rem; margin-bottom: 0.5rem; }
-.meeting-block {
+
+.club-banner {
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  object-fit: cover;
+  background: var(--gray-light);
+  display: block;
+}
+
+.club-body {
+  padding: 1.75rem;
+}
+@media (min-width: 768px) {
+  .club-body { padding: 2.25rem 2.5rem; }
+}
+
+.club-eyebrow {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--primary-color);
+  margin-bottom: 0.4rem;
+}
+.club-eyebrow a { color: inherit; }
+
+.club-detail h2 {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.01em;
+}
+@media (min-width: 768px) {
+  .club-detail h2 { font-size: 2.4rem; }
+}
+
+.club-blurb {
+  font-size: 1.15rem;
+  color: var(--gray);
+  margin: 0 0 1.5rem;
+  line-height: 1.5;
+}
+
+.meeting-strip {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
   background: var(--light);
-  border-left: 4px solid var(--primary-color);
-  padding: 1rem;
-  border-radius: 8px;
-  margin: 1.25rem 0;
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-light);
+  margin: 0 0 1.5rem;
+  overflow: hidden;
 }
-.meeting-block dt { font-weight: 600; color: var(--gray); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
-.meeting-block dd { margin: 0 0 0.6rem; }
+@media (min-width: 560px) { .meeting-strip { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 880px) { .meeting-strip { grid-template-columns: repeat(4, 1fr); } }
+
+.meeting-cell {
+  padding: 0.9rem 1rem;
+  border-top: 1px solid var(--gray-light);
+}
+@media (min-width: 560px) {
+  .meeting-cell:nth-child(-n+2) { border-top: 0; }
+  .meeting-cell:nth-child(odd) { border-right: 1px solid var(--gray-light); }
+}
+@media (min-width: 880px) {
+  .meeting-cell { border-top: 0 !important; border-right: 1px solid var(--gray-light); }
+  .meeting-cell:last-child { border-right: 0; }
+}
+.meeting-cell .label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray);
+  margin-bottom: 0.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.meeting-cell .value {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--dark);
+}
+
+.club-description {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  margin: 0 0 1.5rem;
+}
+
 .vibe {
   background: #fffbea;
   border-left: 4px solid var(--accent-color);
-  padding: 1rem;
+  padding: 1rem 1.15rem;
   border-radius: 8px;
-  margin: 1.25rem 0;
+  margin: 0 0 1.5rem;
   font-style: italic;
+  font-size: 1.05rem;
+  color: #78350f;
+}
+.vibe::before {
+  content: "❝ ";
+  color: var(--accent-color);
+  font-style: normal;
+  font-weight: 700;
+}
+
+.club-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--gray-light);
+}
+@media (min-width: 720px) {
+  .club-footer {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+.club-footer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.4rem;
+  align-items: center;
+  color: var(--gray);
+  font-size: 0.95rem;
+}
+.club-footer-meta strong { color: var(--dark); font-weight: 600; }
+.club-footer-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 }
 
 .video-grid {
