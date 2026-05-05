@@ -1,0 +1,42 @@
+# Netlify configuration for Hilltop Clubs Directory
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Pretty URLs
+[[redirects]]
+  from = "/category/:slug"
+  to = "/category.html?slug=:slug"
+  status = 200
+
+[[redirects]]
+  from = "/club/:slug"
+  to = "/club.html?slug=:slug"
+  status = 200
+
+[[redirects]]
+  from = "/admin/management"
+  to = "/admin-management.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/leader"
+  to = "/admin-leader.html"
+  status = 200
+
+# API → Netlify functions
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

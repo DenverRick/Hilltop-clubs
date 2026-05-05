@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Club — Hilltop Clubs</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1><a href="/">Hilltop Clubs</a></h1>
+  </header>
+
+  <main>
+    <div class="breadcrumb"><a href="/">All categories</a> · <a id="cat-link" href="#">…</a></div>
+    <article class="club-detail" id="detail">
+      <div class="loading">Loading…</div>
+    </article>
+  </main>
+
+  <footer class="site-footer">Hilltop at Inspiration · Aurora, CO</footer>
+
+  <script src="/api-client.js"></script>
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+    const escape = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    const params = new URLSearchParams(location.search);
+    const slug = params.get('slug') || '';
+    const detail = $('#detail');
+
+    function youtubeId(url) {
+      try {
+        const u = new URL(url);
+        if (u.hostname === 'youtu.be') return u.pathname.slice(1);
+        if (u.hostname.includes('youtube.com')) {
+          if (u.pathname === '/watch') return u.searchParams.get('v');
+          if (u.pathname.startsWith('/embed/')) return u.pathname.split('/')[2];
+          if (u.pathname.startsWith('/shorts/')) return u.pathname.split('/')[2];
+        }
+      } catch {}
+      return null;
+    }
+
+    async function onInterestClick(ev) {
+      ev.preventDefault();
+      const btn = ev.currentTarget;
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Opening email…';
+      try {
+        const { mailto } = await ClubsAPI.getClubMailto(slug);
+        window.location.href = mailto;
+        // Restore label after a beat in case the mail handoff bounces back.
+        setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
+      } catch (err) {
+        btn.textContent = original;
+        btn.disabled = false;
+        alert('Could not open email: ' + err.message);
+      }
+    }
+
+    async function load() {
+      if (!slug) {
+        detail.innerHTML = '<div class="error">Missing club.</div>';
+        return;
+      }
+      try {
+        const [{ club }, { categories }] = await Promise.all([
+          ClubsAPI.getClub(slug),
+          ClubsAPI.getCategories(),
+        ]);
+        const cat = categories.find((c) => c.name === club.category);
+        const catLink = $('#cat-link');
+        catLink.textContent = club.category || 'Category';
+        catLink.href = cat ? `/category/${encodeURIComponent(cat.slug)}` : '/';
+        document.title = `${club.name} — Hilltop Clubs`;
+
+        const meetingRows = [
+          ['Frequency', club.meetingFrequency],
+          ['Day', club.meetingDay],
+          ['Time', club.meetingTime],
+          ['Location', club.meetingLocation],
+        ].filter(([, v]) => v);
+
+        const videos = (club.youtubeUrls || []).map(youtubeId).filter(Boolean);
+
+        detail.innerHTML = `
+          <h2>${escape(club.name)}</h2>
+          ${club.blurb ? `<p style="font-size:1.1rem;color:var(--gray);">${escape(club.blurb)}</p>` : ''}
+          ${club.thumbnail ? `<img class="thumbnail" src="${escape(club.thumbnail)}" alt="" style="margin:1rem 0;" />` : ''}
+          ${meetingRows.length ? `
+            <dl class="meeting-block">
+              ${meetingRows.map(([k, v]) => `<dt>${escape(k)}</dt><dd>${escape(v)}</dd>`).join('')}
+            </dl>` : ''}
+          ${club.description ? `<div>${escape(club.description).replace(/\n/g, '<br>')}</div>` : ''}
+          ${club.vibe ? `<div class="vibe">${escape(club.vibe)}</div>` : ''}
+          ${club.leaderName ? `<p><strong>Led by:</strong> ${escape(club.leaderName)}</p>` : ''}
+          ${club.memberCount != null ? `<p><strong>Members:</strong> ${escape(club.memberCount)}</p>` : ''}
+          ${(club.tags && club.tags.length) ? `<div class="tags">${club.tags.map((t) => `<span class="tag">${escape(t)}</span>`).join('')}</div>` : ''}
+          ${videos.length ? `
+            <div class="video-grid ${videos.length > 1 ? 'has-multiple' : ''}">
+              ${videos.map((id) => `<iframe src="https://www.youtube.com/embed/${escape(id)}" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`).join('')}
+            </div>` : ''}
+          <div style="margin-top:1.5rem; display:flex; gap:0.75rem; flex-wrap:wrap;">
+            <button class="btn btn-primary" id="interest-btn" type="button">I'm interested</button>
+            ${club.website ? `<a class="btn btn-secondary" href="${escape(club.website)}" target="_blank" rel="noopener">Visit website</a>` : ''}
+          </div>
+        `;
+        $('#interest-btn').addEventListener('click', onInterestClick);
+      } catch (err) {
+        detail.innerHTML = `<div class="error">${escape(err.message)}</div>`;
+      }
+    }
+    load();
+  </script>
+</body>
+</html>

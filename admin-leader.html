@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Update My Club</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1><a href="/">Hilltop Clubs</a></h1>
+    <div class="tagline">Club leader — update your listing</div>
+  </header>
+
+  <main>
+    <p>
+      Pick your club, enter the email address management has on file for you
+      (this is how we verify it's really you), then update any of the fields
+      below. Only your own row can be edited.
+    </p>
+
+    <form class="leader-form" id="leader-form">
+      <label>Club
+        <select id="slug" required>
+          <option value="">Loading…</option>
+        </select>
+      </label>
+
+      <label>Your email (must match our records)
+        <input id="submitter_email" type="email" required autocomplete="email" />
+      </label>
+
+      <label>Short blurb (one sentence for the card view)
+        <input id="Short Blurb" type="text" maxlength="160" />
+      </label>
+
+      <label>Long description
+        <textarea id="Long Description" rows="6"></textarea>
+      </label>
+
+      <label>Vibe / demographics (free-form — e.g., "30 members, mostly couples, drop-ins welcome")
+        <textarea id="Vibe / Demographics" rows="3"></textarea>
+      </label>
+
+      <label>Tags (comma-separated, e.g., "couples-friendly, drop-ins welcome, outdoors")
+        <input id="Tags" type="text" placeholder="couples-friendly, drop-ins welcome" />
+      </label>
+
+      <label>Meeting frequency
+        <select id="Meeting Frequency">
+          <option value=""></option>
+          <option>Weekly</option>
+          <option>Bi-weekly</option>
+          <option>Monthly</option>
+          <option>Ad-hoc</option>
+        </select>
+      </label>
+
+      <label>Meeting day
+        <select id="Meeting Day">
+          <option value=""></option>
+          <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+          <option>Thursday</option><option>Friday</option><option>Saturday</option>
+          <option>Sunday</option><option>Varies</option>
+        </select>
+      </label>
+
+      <label>Meeting time
+        <input id="Meeting Time" type="text" placeholder="7:00 PM" />
+      </label>
+
+      <label>Meeting location
+        <input id="Meeting Location" type="text" placeholder="Clubhouse Card Room" />
+      </label>
+
+      <label>Member count (optional)
+        <input id="Member Count" type="number" min="0" />
+      </label>
+
+      <label>YouTube URLs (one per line)
+        <textarea id="YouTube URLs" rows="3" placeholder="https://www.youtube.com/watch?v=..."></textarea>
+      </label>
+
+      <label>External website
+        <input id="External Website" type="url" placeholder="https://" />
+      </label>
+
+      <button class="btn btn-primary" type="submit">Save changes</button>
+      <div id="status" class="form-status" hidden></div>
+    </form>
+  </main>
+
+  <footer class="site-footer">Hilltop at Inspiration · Aurora, CO</footer>
+
+  <script src="/api-client.js"></script>
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+
+    // Fields that map directly through. Tags need parsing into an array;
+    // Member Count needs to be a number; everything else is a string.
+    const STRING_FIELDS = [
+      'Short Blurb', 'Long Description', 'Vibe / Demographics',
+      'Meeting Frequency', 'Meeting Day', 'Meeting Time', 'Meeting Location',
+      'YouTube URLs', 'External Website',
+    ];
+
+    async function populateClubs() {
+      const sel = $('#slug');
+      try {
+        const { clubs } = await ClubsAPI.getAllClubs();
+        if (!clubs.length) {
+          sel.innerHTML = '<option value="">No clubs yet</option>';
+          return;
+        }
+        sel.innerHTML = '<option value="">— Pick your club —</option>' +
+          clubs
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((c) => `<option value="${c.slug}">${c.name}</option>`).join('');
+      } catch (err) {
+        sel.innerHTML = `<option value="">Error: ${err.message}</option>`;
+      }
+    }
+
+    function setStatus(kind, message) {
+      const el = $('#status');
+      el.hidden = false;
+      el.className = `form-status ${kind}`;
+      el.textContent = message;
+    }
+
+    $('#leader-form').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const slug = $('#slug').value.trim();
+      const submitter_email = $('#submitter_email').value.trim();
+      if (!slug || !submitter_email) {
+        setStatus('error', 'Pick a club and enter your email.');
+        return;
+      }
+
+      const fields = {};
+      for (const id of STRING_FIELDS) {
+        const v = document.getElementById(id).value.trim();
+        if (v) fields[id] = v;
+      }
+      const tagsRaw = document.getElementById('Tags').value.trim();
+      if (tagsRaw) fields['Tags'] = tagsRaw.split(',').map((t) => t.trim()).filter(Boolean);
+      const memberCount = document.getElementById('Member Count').value.trim();
+      if (memberCount) fields['Member Count'] = Number(memberCount);
+
+      if (Object.keys(fields).length === 0) {
+        setStatus('error', 'Fill in at least one field to update.');
+        return;
+      }
+
+      setStatus('success', 'Saving…');
+      try {
+        await ClubsAPI.leaderUpdate({ slug, submitter_email, fields });
+        setStatus('success', 'Saved! Your changes are live.');
+      } catch (err) {
+        setStatus('error', err.message);
+      }
+    });
+
+    populateClubs();
+  </script>
+</body>
+</html>

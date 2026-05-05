@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Management — Add a Club</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1><a href="/">Hilltop Clubs</a></h1>
+    <div class="tagline">Management — add a new club</div>
+  </header>
+
+  <main>
+    <p>
+      Use this form to add a new club to the directory. Fill in the basic info
+      (name, primary category, leader name, leader email, short blurb, and check
+      <em>Active</em>). The club's leader can then enhance the row themselves at
+      <a href="/admin/leader">/admin/leader</a>.
+    </p>
+
+    <!--
+      Replace the src below with the embed URL of the Airtable form for the
+      Clubs table. In Airtable: Clubs table → "Forms" → create a form with the
+      management-owned fields (Name, Slug, Primary Category, Leader Name(s),
+      Leader Email, Short Blurb, Active) → "Share form" → copy the embed URL.
+    -->
+    <iframe
+      id="airtable-form"
+      title="Add a club"
+      src="about:blank"
+      data-placeholder="Paste the Airtable form embed URL into the src attribute of this iframe (or wire it via env at build time)."
+      style="width:100%; min-height:1200px; border:2px solid var(--gray-light); border-radius:var(--radius); background:white;"
+    ></iframe>
+    <noscript><p>This page needs JavaScript enabled to embed the form.</p></noscript>
+  </main>
+
+  <footer class="site-footer">Hilltop at Inspiration · Aurora, CO</footer>
+</body>
+</html>

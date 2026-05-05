@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hilltop Clubs Directory</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1><a href="/">Hilltop Clubs</a></h1>
+    <div class="tagline">Browse the 40+ resident clubs at Hilltop at Inspiration</div>
+  </header>
+
+  <main>
+    <input class="search-bar" id="search" type="search" placeholder="Search clubs by name, tag, or keyword…" autocomplete="off" />
+
+    <div id="search-results" hidden>
+      <h2>Search results</h2>
+      <div class="grid" id="search-grid"></div>
+    </div>
+
+    <div id="categories-view">
+      <h2>Browse by category</h2>
+      <div class="grid grid-3" id="category-grid">
+        <div class="loading">Loading…</div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    Hilltop at Inspiration · Aurora, CO
+  </footer>
+
+  <script src="/api-client.js"></script>
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+    const escape = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    let allClubs = null;
+
+    async function loadCategories() {
+      const grid = $('#category-grid');
+      try {
+        const { categories } = await ClubsAPI.getCategories();
+        if (!categories.length) {
+          grid.innerHTML = '<div class="empty">No categories yet.</div>';
+          return;
+        }
+        grid.innerHTML = categories.map((c) => `
+          <a class="card" href="/category/${encodeURIComponent(c.slug)}">
+            <div class="icon">${escape(c.icon)}</div>
+            <div class="name">${escape(c.name)}</div>
+            <div class="blurb">${escape(c.description)}</div>
+          </a>
+        `).join('');
+      } catch (err) {
+        grid.innerHTML = `<div class="error">${escape(err.message)}</div>`;
+      }
+    }
+
+    async function ensureAllClubs() {
+      if (allClubs) return allClubs;
+      const { clubs } = await ClubsAPI.getAllClubs();
+      allClubs = clubs;
+      return clubs;
+    }
+
+    function matchClub(club, q) {
+      const hay = [club.name, club.blurb, club.category, ...(club.tags || [])].join(' ').toLowerCase();
+      return hay.includes(q);
+    }
+
+    async function runSearch(q) {
+      const view = $('#categories-view');
+      const results = $('#search-results');
+      const grid = $('#search-grid');
+      if (!q) { results.hidden = true; view.hidden = false; return; }
+      view.hidden = true;
+      results.hidden = false;
+      grid.innerHTML = '<div class="loading">Searching…</div>';
+      try {
+        const clubs = await ensureAllClubs();
+        const matches = clubs.filter((c) => matchClub(c, q));
+        if (!matches.length) {
+          grid.innerHTML = `<div class="empty">No clubs match "${escape(q)}".</div>`;
+          return;
+        }
+        grid.innerHTML = matches.map((c) => `
+          <a class="card" href="/club/${encodeURIComponent(c.slug)}">
+            ${c.thumbnail ? `<img class="thumbnail" src="${escape(c.thumbnail)}" alt="" />` : ''}
+            <div class="name">${escape(c.name)}</div>
+            <div class="blurb">${escape(c.blurb)}</div>
+            ${(c.meetingDay || c.meetingTime) ? `<div class="meeting">${escape([c.meetingDay, c.meetingTime].filter(Boolean).join(' · '))}</div>` : ''}
+          </a>
+        `).join('');
+      } catch (err) {
+        grid.innerHTML = `<div class="error">${escape(err.message)}</div>`;
+      }
+    }
+
+    let searchTimer;
+    $('#search').addEventListener('input', (e) => {
+      clearTimeout(searchTimer);
+      const q = e.target.value.trim().toLowerCase();
+      searchTimer = setTimeout(() => runSearch(q), 150);
+    });
+
+    loadCategories();
+  </script>
+</body>
+</html>

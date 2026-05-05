@@ -1,0 +1,9 @@
+{
+  "name": "hilltop-clubs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/functions": "^5.1.5"
+  }
+}

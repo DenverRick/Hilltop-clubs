@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Category — Hilltop Clubs</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1><a href="/">Hilltop Clubs</a></h1>
+  </header>
+
+  <main>
+    <div class="breadcrumb"><a href="/">All categories</a> · <span id="cat-name">…</span></div>
+    <h2 id="page-title">Loading…</h2>
+    <div class="grid" id="club-grid">
+      <div class="loading">Loading clubs…</div>
+    </div>
+  </main>
+
+  <footer class="site-footer">Hilltop at Inspiration · Aurora, CO</footer>
+
+  <script src="/api-client.js"></script>
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+    const escape = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    const params = new URLSearchParams(location.search);
+    const slug = params.get('slug') || '';
+    const grid = $('#club-grid');
+
+    async function load() {
+      if (!slug) {
+        grid.innerHTML = '<div class="error">Missing category.</div>';
+        return;
+      }
+      try {
+        const [{ categories }, { clubs }] = await Promise.all([
+          ClubsAPI.getCategories(),
+          ClubsAPI.getClubsByCategory(slug),
+        ]);
+        const cat = categories.find((c) => c.slug === slug);
+        const title = cat ? `${cat.icon ? cat.icon + ' ' : ''}${cat.name}` : slug;
+        $('#cat-name').textContent = cat?.name || slug;
+        $('#page-title').textContent = title;
+        document.title = `${cat?.name || slug} — Hilltop Clubs`;
+
+        if (!clubs.length) {
+          grid.innerHTML = '<div class="empty">No clubs in this category yet.</div>';
+          return;
+        }
+        grid.innerHTML = clubs.map((c) => `
+          <a class="card" href="/club/${encodeURIComponent(c.slug)}">
+            ${c.thumbnail ? `<img class="thumbnail" src="${escape(c.thumbnail)}" alt="" />` : ''}
+            <div class="name">${escape(c.name)}</div>
+            <div class="blurb">${escape(c.blurb)}</div>
+            ${(c.meetingDay || c.meetingTime) ? `<div class="meeting">${escape([c.meetingDay, c.meetingTime].filter(Boolean).join(' · '))}</div>` : ''}
+            ${(c.tags && c.tags.length) ? `<div class="tags">${c.tags.map((t) => `<span class="tag">${escape(t)}</span>`).join('')}</div>` : ''}
+          </a>
+        `).join('');
+      } catch (err) {
+        grid.innerHTML = `<div class="error">${escape(err.message)}</div>`;
+      }
+    }
+    load();
+  </script>
+</body>
+</html>

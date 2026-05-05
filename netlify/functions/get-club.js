@@ -1,0 +1,54 @@
+import { preflight, json, env, airtableFetch, stripSensitive, escapeFormulaString } from './_airtable.js';
+
+export async function handler(event) {
+  const pre = preflight(event);
+  if (pre) return pre;
+  if (event.httpMethod !== 'GET') return json(405, { error: 'Method not allowed' });
+
+  const { slug } = event.queryStringParameters || {};
+  if (!slug) return json(400, { error: 'Missing slug' });
+
+  const e = env();
+  if (e.error) return e.error;
+
+  const { ok, status, data } = await airtableFetch(`${e.baseId}/${e.tableClubs}`, {
+    token: e.token,
+    query: {
+      filterByFormula: `AND({Slug} = '${escapeFormulaString(slug)}', {Active} = TRUE())`,
+      maxRecords: '1',
+    },
+  });
+  if (!ok) return json(status, { error: 'Airtable error', details: data });
+  const record = data.records?.[0];
+  if (!record) return json(404, { error: 'Club not found' });
+
+  const safe = stripSensitive(record);
+  const f = safe.fields;
+  const youtubeUrls = (f['YouTube URLs'] || '')
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  return json(200, {
+    club: {
+      id: safe.id,
+      name: f['Name'] || '',
+      slug: f['Slug'] || '',
+      category: f['Primary Category'] || '',
+      leaderName: f['Leader Name(s)'] || f['Leader Name'] || '',
+      blurb: f['Short Blurb'] || '',
+      description: f['Long Description'] || '',
+      tags: f['Tags'] || [],
+      meetingFrequency: f['Meeting Frequency'] || '',
+      meetingDay: f['Meeting Day'] || '',
+      meetingTime: f['Meeting Time'] || '',
+      meetingLocation: f['Meeting Location'] || '',
+      memberCount: f['Member Count'] ?? null,
+      vibe: f['Vibe / Demographics'] || '',
+      youtubeUrls,
+      thumbnail: f['Thumbnail Image']?.[0]?.thumbnails?.large?.url || f['Thumbnail Image']?.[0]?.url || '',
+      website: f['External Website'] || '',
+      lastUpdated: f['Last Updated'] || null,
+    },
+  });
+}
