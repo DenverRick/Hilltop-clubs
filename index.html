@@ -14,14 +14,13 @@
 
   <main>
     <section class="hero">
-      <h2>Find your club at Hilltop</h2>
-      <p class="lead">Forty-plus resident clubs — sports, cards, arts, learning, service, and a lot of fun. Browse by category or search for one you've heard about.</p>
+      <div class="search-wrap">
+        <input class="search-bar" id="search" type="search" placeholder="Search clubs by name or keyword…" autocomplete="off" />
+      </div>
+      <p class="opt-in-note">An opt-in directory — not every Hilltop club is listed yet. Leaders can opt in any time.</p>
       <div class="stats" id="stats" hidden>
         <span><strong id="stat-clubs">0</strong> clubs</span>
-        <span><strong>8</strong> categories</span>
-      </div>
-      <div class="search-wrap">
-        <input class="search-bar" id="search" type="search" placeholder="Search clubs by name, tag, or keyword…" autocomplete="off" />
+        <span><strong id="stat-cats">8</strong> categories</span>
       </div>
     </section>
 
@@ -89,10 +88,12 @@
           return;
         }
 
+        $('#stat-cats').textContent = categories.length;
+
         catGrid.innerHTML = categories.map((c) => {
           const n = counts.get(c.name) || 0;
           return `
-            <a class="card category-card" href="/category/${encodeURIComponent(c.slug)}">
+            <a class="card category-card" data-slug="${escape(c.slug)}" href="/category/${encodeURIComponent(c.slug)}">
               <div class="row">
                 <div class="icon">${escape(c.icon)}</div>
                 <span class="count ${n === 0 ? 'zero' : ''}">${n} ${n === 1 ? 'club' : 'clubs'}</span>
@@ -119,8 +120,9 @@
       if (ranked.length < 2) return;
       const grid = $('#featured-grid');
       grid.innerHTML = ranked.map((c) => `
-        <a class="card" href="/club/${encodeURIComponent(c.slug)}">
-          ${c.thumbnail ? `<img class="thumbnail" src="${escape(c.thumbnail)}" alt="" />` : ''}
+        <a class="card featured-card" href="/club/${encodeURIComponent(c.slug)}">
+          ${c.thumbnail ? `<img class="thumbnail" src="${escape(c.thumbnail)}" alt="" />` : '<div class="thumbnail thumbnail-placeholder" aria-hidden="true">📌</div>'}
+          <span class="featured-chip">Recently updated</span>
           <div class="name">${escape(c.name)}</div>
           <div class="blurb">${escape(c.blurb)}</div>
           ${(c.meetingDay || c.meetingTime) ? `<div class="meeting">${escape([c.meetingDay, c.meetingTime].filter(Boolean).join(' · '))}</div>` : ''}

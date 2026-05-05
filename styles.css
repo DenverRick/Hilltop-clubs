@@ -50,43 +50,38 @@ header.site-header .tagline {
   margin-top: 0.15rem;
 }
 
-/* Landing hero — sits inside <main> so it inherits content width but reads
-   like a banner. Soft warm gradient anchored on the brand blue. */
+/* Landing hero — slim, search-forward. The site header carries the title and
+   tagline, so the hero just needs a search bar, a soft frame, and an opt-in
+   note. */
 .hero {
   background:
-    radial-gradient(1200px 320px at 80% -10%, rgba(255,255,255,0.55), transparent 60%),
+    radial-gradient(1200px 280px at 80% -10%, rgba(255,255,255,0.55), transparent 60%),
     linear-gradient(135deg, #e0ecff 0%, #f0e7ff 60%, #fff5e6 100%);
   border-radius: 18px;
-  padding: 2.25rem 1.5rem 2rem;
+  padding: 1.75rem 1.5rem 1.5rem;
   margin-bottom: 2rem;
   text-align: center;
   border: 1px solid rgba(74, 144, 226, 0.12);
 }
-@media (min-width: 768px) { .hero { padding: 3rem 2.5rem 2.5rem; } }
-.hero h2 {
-  margin: 0 0 0.4rem;
-  font-size: 2rem;
-  letter-spacing: -0.02em;
-  color: var(--dark);
-}
-@media (min-width: 768px) { .hero h2 { font-size: 2.6rem; } }
-.hero .lead {
-  margin: 0 auto 1.5rem;
+@media (min-width: 768px) { .hero { padding: 2.25rem 2.5rem 1.75rem; } }
+.hero .opt-in-note {
+  margin: 0.85rem auto 0.5rem;
   max-width: 38rem;
   color: var(--gray);
-  font-size: 1.1rem;
-  line-height: 1.55;
+  font-size: 0.95rem;
+  font-style: italic;
+  opacity: 0.85;
 }
 .hero .stats {
   display: inline-flex;
   gap: 1.5rem;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
   color: var(--gray);
   flex-wrap: wrap;
   justify-content: center;
 }
-.hero .stats strong { color: var(--primary-color); font-size: 1.05rem; font-weight: 700; }
+.hero .stats strong { color: var(--primary-color); font-size: 1rem; font-weight: 700; }
 .hero .search-wrap {
   position: relative;
   max-width: 38rem;
@@ -179,17 +174,48 @@ h3 { font-size: 1.2rem; margin: 0 0 0.5rem; }
   line-height: 1;
 }
 
-/* Category cards — colored icon halo + count chip */
-.category-card { gap: 0.75rem; }
+/* Category cards — each category gets a tinted gradient + accent stripe via
+   --c1/--c2/--accent custom properties keyed off data-slug. Defaults below
+   keep things readable if a slug is unrecognized. */
+.category-card {
+  --c1: #eef2ff;
+  --c2: #ffffff;
+  --accent: var(--primary-color);
+  gap: 0.85rem;
+  padding: 1.5rem 1.25rem 1.35rem;
+  background: linear-gradient(160deg, var(--c1), var(--c2) 75%);
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+.category-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  background: var(--accent);
+  opacity: 0.85;
+}
+.category-card[data-slug="sports-fitness"]      { --c1: #d1fae5; --c2: #ecfdf5; --accent: #16a34a; }
+.category-card[data-slug="games-cards"]         { --c1: #ede9fe; --c2: #f5f3ff; --accent: #7c3aed; }
+.category-card[data-slug="arts-crafts"]         { --c1: #fce7f3; --c2: #fdf2f8; --accent: #db2777; }
+.category-card[data-slug="civic"]               { --c1: #dbeafe; --c2: #eff6ff; --accent: #2563eb; }
+.category-card[data-slug="learning-discussion"] { --c1: #fef3c7; --c2: #fffbeb; --accent: #d97706; }
+.category-card[data-slug="social-cultural"]     { --c1: #ccfbf1; --c2: #f0fdfa; --accent: #0d9488; }
+.category-card[data-slug="service-volunteer"]   { --c1: #ffedd5; --c2: #fff7ed; --accent: #ea580c; }
+.category-card[data-slug="special-interests"]   { --c1: #e0e7ff; --c2: #eef2ff; --accent: #6366f1; }
+
 .category-card .icon {
-  width: 3.25rem;
-  height: 3.25rem;
-  font-size: 1.85rem;
+  width: 4.25rem;
+  height: 4.25rem;
+  font-size: 2.6rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(74,144,226,0.10), rgba(245,158,11,0.10));
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+  line-height: 1;
 }
 .category-card .row {
   display: flex;
@@ -202,13 +228,17 @@ h3 { font-size: 1.2rem; margin: 0 0 0.5rem; }
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--primary-color);
-  background: rgba(74,144,226,0.12);
-  padding: 0.2rem 0.55rem;
+  color: var(--accent);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.25rem 0.6rem;
   border-radius: 999px;
   white-space: nowrap;
+  border: 1px solid rgba(15, 23, 42, 0.06);
 }
-.category-card .count.zero { color: var(--gray); background: var(--gray-light); }
+.category-card .count.zero { color: var(--gray); background: rgba(255, 255, 255, 0.55); }
+.category-card .name { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; }
+.category-card .blurb { color: var(--dark); opacity: 0.72; font-size: 0.95rem; }
+
 .card .name { font-size: 1.2rem; font-weight: 600; }
 .card .blurb { color: var(--gray); font-size: 0.95rem; }
 .card .meeting { font-size: 0.9rem; color: var(--gray); }
@@ -218,6 +248,35 @@ h3 { font-size: 1.2rem; margin: 0 0 0.5rem; }
   object-fit: cover;
   border-radius: 8px;
   background: var(--gray-light);
+}
+.thumbnail-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: var(--gray);
+  background: linear-gradient(135deg, #fef3c7, #fce7f3);
+}
+
+/* Recently-updated cards — warm cream tone + small badge to differentiate
+   from category cards above. */
+.featured-card {
+  background: linear-gradient(180deg, #fffaf0 0%, #fff5e3 100%);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  position: relative;
+}
+.featured-card .featured-chip {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.92);
+  color: #b45309;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  margin-top: 0.1rem;
 }
 
 .tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
