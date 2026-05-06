@@ -8,7 +8,7 @@ A small searchable directory of the ~40 resident clubs at Hilltop at Inspiration
 - **Backend:** Netlify Functions (Node, ESM, esbuild bundler) proxying Airtable.
 - **Data:** Airtable base "Hilltop Clubs Directory", tables `Clubs` + `Categories`.
 - **Email:** Residents' own mail clients via `mailto:` — no Resend/SendGrid integration.
-- **Hosting:** Netlify, deploys from GitHub `DenverRick/hilltop-clubs`. Custom domain `hilltop-clubs.org`.
+- **Hosting:** Netlify, deploys from GitHub `DenverRick/HIlltop-clubs`. Custom domain `hilltopclubs.org` (Cloudflare-registered, DNS-only — apex A record `75.2.60.5`, www CNAME to `hilltop-clubs.netlify.app`). Let's Encrypt cert auto-managed by Netlify.
 
 ## Critical invariants
 
@@ -50,7 +50,7 @@ netlify/functions/
 
 **Categories:** Name, Slug, Sort Order, Icon (emoji), Short Description.
 
-The 8 categories: Sports & Fitness, Games & Cards, Arts & Crafts, Music & Performing Arts, Learning & Discussion, Social & Cultural, Service & Volunteer, Special Interests / Hobbies.
+The 8 categories: Sports & Fitness, Games & Cards, Arts & Crafts, Civic, Learning & Discussion, Social & Cultural, Service & Volunteer, Special Interests / Hobbies.
 
 ## Working with Rick
 

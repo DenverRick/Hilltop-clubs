@@ -12,7 +12,7 @@
   </header>
 
   <main>
-    <div class="breadcrumb"><a href="/">All categories</a> · <a id="cat-link" href="#">…</a></div>
+    <a class="back-button" href="/">← All clubs</a>
     <article class="club-detail" id="detail">
       <div class="loading">Loading…</div>
     </article>
@@ -84,9 +84,6 @@
           ClubsAPI.getCategories(),
         ]);
         const cat = categories.find((c) => c.name === club.category);
-        const catLink = $('#cat-link');
-        catLink.textContent = club.category || 'Category';
-        catLink.href = cat ? `/category/${encodeURIComponent(cat.slug)}` : '/';
         document.title = `${club.name} — Hilltop Clubs`;
 
         // If the leader filled in the free-text "Meeting Schedule" override

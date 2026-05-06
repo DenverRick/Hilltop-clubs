@@ -12,7 +12,7 @@
   </header>
 
   <main>
-    <div class="breadcrumb"><a href="/">All categories</a> · <span id="cat-name">…</span></div>
+    <a class="back-button" href="/">← All clubs</a>
     <h2 id="page-title">Loading…</h2>
     <div class="grid" id="club-grid">
       <div class="loading">Loading clubs…</div>
@@ -47,7 +47,6 @@
         ]);
         const cat = categories.find((c) => c.slug === slug);
         const title = cat ? `${cat.icon ? cat.icon + ' ' : ''}${cat.name}` : slug;
-        $('#cat-name').textContent = cat?.name || slug;
         $('#page-title').textContent = title;
         document.title = `${cat?.name || slug} — Hilltop Clubs`;
 

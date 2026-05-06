@@ -4,3 +4,7 @@ node_modules/
 .env.*
 .DS_Store
 *.log
+
+# Local working docs and source-of-truth files (may contain resident PII)
+*.pdf
+*.docx
