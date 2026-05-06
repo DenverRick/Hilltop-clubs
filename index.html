@@ -14,20 +14,12 @@
 
   <main>
     <section class="hero">
-      <div class="search-wrap">
-        <input class="search-bar search-input" id="search" type="search" placeholder="Search clubs by name or keyword…" autocomplete="off" />
-      </div>
       <p class="opt-in-note">An opt-in directory — not every Hilltop club is listed yet. Leaders can opt in any time.</p>
       <div class="stats" id="stats" hidden>
         <span><strong id="stat-clubs">0</strong> clubs</span>
         <span><strong id="stat-cats">8</strong> categories</span>
       </div>
     </section>
-
-    <div id="search-results" hidden>
-      <div class="section-head"><h3>Search results</h3></div>
-      <div class="grid" id="search-grid"></div>
-    </div>
 
     <section id="featured-view" hidden>
       <div class="section-head">
@@ -45,9 +37,12 @@
     </section>
 
     <section class="search-bottom" id="search-bottom-view">
-      <div class="section-head"><h3>Looking for something specific?</h3></div>
+      <div class="section-head"><h3>Search clubs</h3></div>
       <div class="search-wrap">
         <input class="search-bar search-input" id="search-bottom" type="search" placeholder="Search clubs by name or keyword…" autocomplete="off" />
+      </div>
+      <div id="search-results" hidden>
+        <div class="grid" id="search-grid"></div>
       </div>
     </section>
   </main>
@@ -206,22 +201,11 @@
       }
     }
 
-    // Both top and bottom search inputs share state. Typing in either
-    // syncs the other and re-runs the search. The bottom input also
-    // scrolls to the results section so the user sees feedback.
-    const searchInputs = document.querySelectorAll('.search-input');
     let searchTimer;
-    searchInputs.forEach((input) => {
-      input.addEventListener('input', (e) => {
-        const raw = e.target.value;
-        searchInputs.forEach((other) => { if (other !== input) other.value = raw; });
-        clearTimeout(searchTimer);
-        const q = raw.trim().toLowerCase();
-        searchTimer = setTimeout(() => runSearch(q), 150);
-        if (input.id === 'search-bottom' && q) {
-          $('#search-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      });
+    $('#search-bottom').addEventListener('input', (e) => {
+      clearTimeout(searchTimer);
+      const q = e.target.value.trim().toLowerCase();
+      searchTimer = setTimeout(() => runSearch(q), 150);
     });
 
     loadLanding();

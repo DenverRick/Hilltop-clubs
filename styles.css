@@ -85,30 +85,6 @@ header.site-header .tagline {
   justify-content: center;
 }
 .hero .stats strong { color: var(--primary-color); font-size: 1rem; font-weight: 700; }
-.hero .search-wrap {
-  position: relative;
-  max-width: 38rem;
-  margin: 0 auto;
-}
-.hero .search-wrap::before {
-  content: "🔍";
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 1.1rem;
-  pointer-events: none;
-  opacity: 0.6;
-}
-.hero .search-bar {
-  margin: 0;
-  padding-left: 2.75rem;
-  border-color: white;
-  box-shadow: 0 4px 20px rgba(74, 144, 226, 0.12), 0 1px 3px rgba(0,0,0,0.04);
-  background: white;
-}
-.hero .search-bar:focus { box-shadow: 0 4px 24px rgba(74, 144, 226, 0.22); }
-
 /* Bottom search bar — quieter than the hero, but a clear convenience for users
    who scroll to the bottom and want to search without going back up. */
 .search-bottom {
