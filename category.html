@@ -14,17 +14,61 @@
   <main>
     <a class="back-button" href="/">← All clubs</a>
     <h2 id="page-title">Loading…</h2>
+    <div class="day-filter" id="day-filter" hidden></div>
     <div class="grid" id="club-grid">
       <div class="loading">Loading clubs…</div>
     </div>
   </main>
 
-  <footer class="site-footer">Hilltop at Inspiration · Aurora, CO</footer>
+  <footer class="site-footer">
+    Hilltop at Inspiration · Aurora, CO ·
+    <a class="footer-link" href="mailto:miles.rick@gmail.com?subject=Hilltop%20Clubs%20Directory%20%E2%80%94%20Suggestion%20or%20correction&body=Hi%20Rick%2C%0A%0A">Suggest a club or report a correction</a>
+  </footer>
 
   <script src="/api-client.js"></script>
   <script>
     const $ = (sel) => document.querySelector(sel);
     const escape = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const NEW_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+    const isNewClub = (createdTime) => createdTime ? (Date.now() - Date.parse(createdTime)) < NEW_WINDOW_MS : false;
+    const DAYS = [
+      ['Monday', 'Mon'], ['Tuesday', 'Tue'], ['Wednesday', 'Wed'],
+      ['Thursday', 'Thu'], ['Friday', 'Fri'], ['Saturday', 'Sat'], ['Sunday', 'Sun'],
+    ];
+    const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    function daysUntil(isoDate) {
+      if (!isoDate) return null;
+      const m = String(isoDate).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (!m) return null;
+      const target = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      const today = new Date(); today.setHours(0,0,0,0);
+      const delta = Math.round((target - today) / 86400000);
+      if (delta < 0 || delta > 6) return null;
+      return delta;
+    }
+    function thisWeekLabel(club) {
+      const d = daysUntil(club.nextMeeting);
+      if (d !== null) {
+        if (d === 0) return 'Today';
+        if (d === 1) return 'Tomorrow';
+        const dow = new Date(); dow.setHours(0,0,0,0); dow.setDate(dow.getDate() + d);
+        return `Meets ${DAY_NAMES[dow.getDay()]}`;
+      }
+      if (!/weekly/i.test(club.meetingFrequency || '')) return null;
+      const day = String(club.meetingDay || '').toLowerCase();
+      const idx = DAY_NAMES.findIndex((dn) => day.includes(dn.toLowerCase()) || day.includes(dn.slice(0,3).toLowerCase()));
+      if (idx < 0) return null;
+      const delta = (idx - new Date().getDay() + 7) % 7;
+      if (delta === 0) return 'Today';
+      if (delta === 1) return 'Tomorrow';
+      return `Meets ${DAY_NAMES[idx]}`;
+    }
+    function cardChip(club) {
+      const tw = thisWeekLabel(club);
+      if (tw) return `<span class="this-week-chip">${tw}</span>`;
+      if (isNewClub(club.createdTime)) return '<span class="new-chip">New</span>';
+      return '';
+    }
 
     // Slug comes from ?slug= when Netlify rewrote /category/:slug → category.html?slug=...
     // Fall back to the last path segment so /category/foo also works in static-preview
@@ -54,19 +98,47 @@
           grid.innerHTML = '<div class="empty">No clubs in this category yet.</div>';
           return;
         }
-        grid.innerHTML = clubs.map((c) => `
-          <a class="card" href="/club/${encodeURIComponent(c.slug)}">
-            ${c.thumbnail ? `<img class="thumbnail" src="${escape(c.thumbnail)}" alt="" />` : ''}
-            <div class="name">${escape(c.name)}</div>
-            <div class="blurb">${escape(c.blurb)}</div>
-            ${(c.meetingDay || c.meetingTime) ? `<div class="meeting">${escape([c.meetingDay, c.meetingTime].filter(Boolean).join(' · '))}</div>` : ''}
-            ${(c.tags && c.tags.length) ? `<div class="tags">${c.tags.map((t) => `<span class="tag">${escape(t)}</span>`).join('')}</div>` : ''}
-          </a>
-        `).join('');
+        renderClubs(clubs);
+        renderDayFilter(clubs);
       } catch (err) {
         grid.innerHTML = `<div class="error">${escape(err.message)}</div>`;
       }
     }
+
+    function renderClubs(clubs) {
+      grid.innerHTML = clubs.map((c) => `
+        <a class="card" href="/club/${encodeURIComponent(c.slug)}">
+          ${c.thumbnail ? `<img class="thumbnail" src="${escape(c.thumbnail)}" alt="" />` : ''}
+          ${cardChip(c)}
+          <div class="name">${escape(c.name)}</div>
+          <div class="blurb">${escape(c.blurb)}</div>
+          ${(c.meetingDay || c.meetingTime) ? `<div class="meeting">${escape([c.meetingDay, c.meetingTime].filter(Boolean).join(' · '))}</div>` : ''}
+          ${(c.tags && c.tags.length) ? `<div class="tags">${c.tags.map((t) => `<span class="tag">${escape(t)}</span>`).join('')}</div>` : ''}
+        </a>
+      `).join('');
+      if (!clubs.length) {
+        grid.innerHTML = '<div class="empty">No clubs match this filter.</div>';
+      }
+    }
+
+    function renderDayFilter(allClubs) {
+      const filter = $('#day-filter');
+      const matchesDay = (club, day) => (club.meetingDay || '').toLowerCase().includes(day.toLowerCase());
+      const available = DAYS.filter(([full]) => allClubs.some((c) => matchesDay(c, full)));
+      if (!available.length) return;
+      filter.hidden = false;
+      filter.innerHTML =
+        `<button class="day-chip is-active" data-day="">All</button>` +
+        available.map(([full, abbr]) => `<button class="day-chip" data-day="${escape(full)}">${escape(abbr)}</button>`).join('');
+      filter.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('.day-chip');
+        if (!btn) return;
+        filter.querySelectorAll('.day-chip').forEach((b) => b.classList.toggle('is-active', b === btn));
+        const day = btn.dataset.day;
+        renderClubs(day ? allClubs.filter((c) => matchesDay(c, day)) : allClubs);
+      });
+    }
+
     load();
   </script>
 </body>

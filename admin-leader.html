@@ -77,6 +77,10 @@
         <input id="Meeting Location" type="text" placeholder="Clubhouse Card Room" />
       </label>
 
+      <label>Next meeting date (optional — used to highlight upcoming meetings on cards)
+        <input id="Next Meeting" type="date" />
+      </label>
+
       <label>Member count (optional)
         <input id="Member Count" type="number" min="0" />
       </label>
@@ -109,6 +113,7 @@
     const STRING_FIELDS = [
       'Short Blurb', 'Long Description', 'Vibe / Demographics',
       'Meeting Frequency', 'Meeting Day', 'Meeting Schedule', 'Meeting Time', 'Meeting Location',
+      'Next Meeting',
       'YouTube URLs', 'External Website', 'TeamReach',
     ];
 

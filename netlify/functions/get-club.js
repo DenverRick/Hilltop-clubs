@@ -51,6 +51,8 @@ export async function handler(event) {
       website: f['External Website'] || '',
       teamReach: f['TeamReach'] || '',
       lastUpdated: f['Last Updated'] || null,
+      createdTime: safe.createdTime || null,
+      nextMeeting: f['Next Meeting'] || null,
     },
   });
 }

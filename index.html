@@ -46,13 +46,57 @@
   </main>
 
   <footer class="site-footer">
-    Hilltop at Inspiration · Aurora, CO
+    Hilltop at Inspiration · Aurora, CO ·
+    <a class="footer-link" href="mailto:miles.rick@gmail.com?subject=Hilltop%20Clubs%20Directory%20%E2%80%94%20Suggestion%20or%20correction&body=Hi%20Rick%2C%0A%0A">Suggest a club or report a correction</a>
   </footer>
 
   <script src="/api-client.js"></script>
   <script>
     const $ = (sel) => document.querySelector(sel);
     const escape = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const NEW_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+    const isNewClub = (createdTime) => createdTime ? (Date.now() - Date.parse(createdTime)) < NEW_WINDOW_MS : false;
+    const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    // Returns days from today (0..6) for an explicit Next Meeting date, or null
+    // if it's missing / past / more than a week out. Parses YYYY-MM-DD as local
+    // time to avoid Airtable's UTC date string shifting by timezone.
+    function daysUntil(isoDate) {
+      if (!isoDate) return null;
+      const m = String(isoDate).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (!m) return null;
+      const target = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      const today = new Date(); today.setHours(0,0,0,0);
+      const delta = Math.round((target - today) / 86400000);
+      if (delta < 0 || delta > 6) return null;
+      return delta;
+    }
+    function thisWeekLabel(club) {
+      // Prefer the explicit Next Meeting date if a leader has set one.
+      const d = daysUntil(club.nextMeeting);
+      if (d !== null) {
+        if (d === 0) return 'Today';
+        if (d === 1) return 'Tomorrow';
+        const dow = new Date(); dow.setHours(0,0,0,0); dow.setDate(dow.getDate() + d);
+        return `Meets ${DAY_NAMES[dow.getDay()]}`;
+      }
+      // Fall back to weekly + day heuristic for clubs without a Next Meeting set.
+      if (!/weekly/i.test(club.meetingFrequency || '')) return null;
+      const day = String(club.meetingDay || '').toLowerCase();
+      const idx = DAY_NAMES.findIndex((dn) => day.includes(dn.toLowerCase()) || day.includes(dn.slice(0,3).toLowerCase()));
+      if (idx < 0) return null;
+      const delta = (idx - new Date().getDay() + 7) % 7;
+      if (delta === 0) return 'Today';
+      if (delta === 1) return 'Tomorrow';
+      return `Meets ${DAY_NAMES[idx]}`;
+    }
+    // Single-chip resolution. Priority: this-week > new > recently-updated (featured row only).
+    function cardChip(club, { allowFeatured = false } = {}) {
+      const tw = thisWeekLabel(club);
+      if (tw) return `<span class="this-week-chip">${tw}</span>`;
+      if (isNewClub(club.createdTime)) return '<span class="new-chip">New</span>';
+      if (allowFeatured) return '<span class="featured-chip">Recently updated</span>';
+      return '';
+    }
 
     let allClubs = null;
     let categoriesByName = new Map();
@@ -122,7 +166,7 @@
       grid.innerHTML = ranked.map((c) => `
         <a class="card featured-card" href="/club/${encodeURIComponent(c.slug)}">
           ${c.thumbnail ? `<img class="thumbnail" src="${escape(c.thumbnail)}" alt="" />` : '<div class="thumbnail thumbnail-placeholder" aria-hidden="true">📌</div>'}
-          <span class="featured-chip">Recently updated</span>
+          ${cardChip(c, { allowFeatured: true })}
           <div class="name">${escape(c.name)}</div>
           <div class="blurb">${escape(c.blurb)}</div>
           ${(c.meetingDay || c.meetingTime) ? `<div class="meeting">${escape([c.meetingDay, c.meetingTime].filter(Boolean).join(' · '))}</div>` : ''}
@@ -154,6 +198,7 @@
         grid.innerHTML = matches.map((c) => `
           <a class="card" href="/club/${encodeURIComponent(c.slug)}">
             ${c.thumbnail ? `<img class="thumbnail" src="${escape(c.thumbnail)}" alt="" />` : ''}
+            ${cardChip(c)}
             <div class="name">${escape(c.name)}</div>
             <div class="blurb">${escape(c.blurb)}</div>
             ${(c.meetingDay || c.meetingTime) ? `<div class="meeting">${escape([c.meetingDay, c.meetingTime].filter(Boolean).join(' · '))}</div>` : ''}

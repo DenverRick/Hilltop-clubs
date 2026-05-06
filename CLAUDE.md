@@ -46,7 +46,7 @@ netlify/functions/
 
 ## Airtable schema
 
-**Clubs:** Name, Slug, Primary Category (single-select, 8 buckets), Leader Name(s), Leader Email, Short Blurb, Long Description, Tags (multi), Meeting Frequency, Meeting Day, Meeting Time, Meeting Location, Member Count, Vibe / Demographics, YouTube URLs (one per line), Thumbnail Image (attachment), External Website, Active (checkbox), Last Updated (auto).
+**Clubs:** Name, Slug, Primary Category (single-select, 8 buckets), Leader Name(s), Leader Email, Short Blurb, Long Description, Tags (multi), Meeting Frequency, Meeting Day, Meeting Schedule, Meeting Time, Meeting Location, Next Meeting (date — drives the "Today/Tomorrow/Meets X" chip on cards), Member Count, Vibe / Demographics, YouTube URLs (one per line), Thumbnail Image (attachment), External Website, TeamReach, Active (checkbox), Last Updated (auto).
 
 **Categories:** Name, Slug, Sort Order, Icon (emoji), Short Description.
 
