@@ -35,6 +35,7 @@ netlify/functions/
   get-club.js
   get-club-mailto.js
   leader-update.js
+  leader-upload-thumbnail.js
 ```
 
 ## Required env vars (Netlify dashboard)

@@ -91,6 +91,12 @@
         <input id="Member Count" type="number" min="0" />
       </label>
 
+      <label>Thumbnail image (replaces your current banner — JPEG, PNG, or WebP, max 5 MB)
+        <input id="thumbnail-file" type="file" accept="image/jpeg,image/png,image/webp" />
+        <span class="field-hint">Photo policy: please don't upload images that show identifiable club members. If you'd like a generic banner, ask Rick to generate one with AI for your review.</span>
+        <div id="thumbnail-status" class="form-status" hidden></div>
+      </label>
+
       <label>YouTube URLs (one per line)
         <textarea id="YouTube URLs" rows="3" placeholder="https://www.youtube.com/watch?v=..."></textarea>
       </label>
@@ -170,7 +176,11 @@
         document.getElementById('Next Meeting').value = club.nextMeeting || '';
         document.getElementById('Member Count').value = club.memberCount ?? '';
         document.getElementById('YouTube URLs').value = (club.youtubeUrls || []).join('\n');
-        document.getElementById('External Website').value = club.website || '';
+        // Airtable accepts schemeless URLs (e.g. "www.foo.org") but the HTML5
+        // url input doesn't — prefix https:// so the field validates on save.
+        const rawWebsite = (club.website || '').trim();
+        const website = rawWebsite && !/^https?:\/\//i.test(rawWebsite) ? `https://${rawWebsite}` : rawWebsite;
+        document.getElementById('External Website').value = website;
         document.getElementById('TeamReach').value = club.teamReach || '';
         $('#status').hidden = true;
       } catch (err) {
@@ -185,6 +195,59 @@
       el.className = `form-status ${kind}`;
       el.textContent = message;
     }
+
+    // Thumbnail upload — independent of the main form save. Reads the chosen
+    // file as base64 and POSTs to the upload endpoint along with the slug +
+    // submitter email. Server-side email-match decides whether it succeeds.
+    function setThumbStatus(kind, message) {
+      const el = $('#thumbnail-status');
+      el.hidden = false;
+      el.className = `form-status ${kind}`;
+      el.textContent = message;
+    }
+    function readFileAsBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Could not read file'));
+        reader.onload = () => {
+          const result = String(reader.result || '');
+          // Data URL → strip the "data:...;base64," prefix.
+          const comma = result.indexOf(',');
+          resolve(comma >= 0 ? result.slice(comma + 1) : result);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    $('#thumbnail-file').addEventListener('change', async (ev) => {
+      const file = ev.target.files?.[0];
+      if (!file) return;
+      const slug = $('#slug').value.trim();
+      const submitter_email = $('#submitter_email').value.trim();
+      if (!slug || !submitter_email) {
+        setThumbStatus('error', 'Pick your club and enter your email above before uploading.');
+        ev.target.value = '';
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setThumbStatus('error', 'Image is over 5 MB. Try a smaller version.');
+        ev.target.value = '';
+        return;
+      }
+      setThumbStatus('success', 'Uploading…');
+      try {
+        const fileBase64 = await readFileAsBase64(file);
+        await ClubsAPI.leaderUploadThumbnail({
+          slug,
+          submitter_email,
+          filename: file.name,
+          contentType: file.type,
+          fileBase64,
+        });
+        setThumbStatus('success', 'Image uploaded — it will appear on your club card within a minute.');
+      } catch (err) {
+        setThumbStatus('error', err.message);
+      }
+    });
 
     $('#leader-form').addEventListener('submit', async (ev) => {
       ev.preventDefault();

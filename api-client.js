@@ -24,5 +24,6 @@
     getClub: (slug) => getJSON(`/api/get-club?slug=${encodeURIComponent(slug)}`),
     getClubMailto: (slug) => getJSON(`/api/get-club-mailto?slug=${encodeURIComponent(slug)}`),
     leaderUpdate: (payload) => postJSON('/api/leader-update', payload),
+    leaderUploadThumbnail: (payload) => postJSON('/api/leader-upload-thumbnail', payload),
   };
 })();

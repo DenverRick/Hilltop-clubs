@@ -572,6 +572,13 @@ form.leader-form input:focus, form.leader-form select:focus, form.leader-form te
   outline: none;
   border-color: var(--primary-color);
 }
+.field-hint {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--gray);
+  font-weight: 400;
+}
 .helper-note {
   font-size: 0.9rem;
   color: var(--gray);
