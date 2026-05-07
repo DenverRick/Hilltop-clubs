@@ -1,4 +1,4 @@
-import { preflight, json, env, airtableFetch, escapeFormulaString } from './_airtable.js';
+import { preflight, json, env, airtableFetch, escapeFormulaString, CACHE } from './_airtable.js';
 
 // Returns a mailto: URL for a given club, only on explicit user click.
 // The Leader Email is resolved server-side and embedded into the mailto string.
@@ -38,5 +38,8 @@ export async function handler(event) {
   const body = `Hi ${leaderName},\n\nI live at Hilltop and saw your club in the directory — I'd love to learn more about how to get involved.\n\nThanks!\n`;
   const mailto = `mailto:${encodeURIComponent(leaderEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
-  return json(200, { mailto });
+  // Privacy-sensitive — never cache. Each click resolves the leader email
+  // freshly and emits a one-shot mailto, ensuring deactivated leaders or
+  // updated addresses propagate immediately.
+  return json(200, { mailto }, { 'Cache-Control': CACHE.NEVER });
 }

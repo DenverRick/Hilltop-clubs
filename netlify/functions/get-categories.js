@@ -1,4 +1,4 @@
-import { preflight, json, env, airtableFetch } from './_airtable.js';
+import { preflight, json, env, airtableFetch, CACHE } from './_airtable.js';
 
 export async function handler(event) {
   const pre = preflight(event);
@@ -22,5 +22,5 @@ export async function handler(event) {
     description: r.fields['Short Description'] || '',
     sortOrder: r.fields['Sort Order'] ?? 999,
   }));
-  return json(200, { categories });
+  return json(200, { categories }, { 'Cache-Control': CACHE.CATEGORIES });
 }

@@ -1,4 +1,4 @@
-import { preflight, json, env, airtableFetch, stripSensitive, escapeFormulaString } from './_airtable.js';
+import { preflight, json, env, airtableFetch, stripSensitive, escapeFormulaString, CACHE } from './_airtable.js';
 
 export async function handler(event) {
   const pre = preflight(event);
@@ -54,5 +54,5 @@ export async function handler(event) {
       createdTime: safe.createdTime || null,
       nextMeeting: f['Next Meeting'] || null,
     },
-  });
+  }, { 'Cache-Control': CACHE.CLUBS });
 }

@@ -17,9 +17,25 @@ export function preflight(event) {
   return null;
 }
 
-export function json(statusCode, body) {
-  return { statusCode, headers: JSON_HEADERS, body: JSON.stringify(body) };
+export function json(statusCode, body, extraHeaders) {
+  const headers = extraHeaders ? { ...JSON_HEADERS, ...extraHeaders } : JSON_HEADERS;
+  return { statusCode, headers, body: JSON.stringify(body) };
 }
+
+// Cache directives used by the read functions. Tuned for the free-tier
+// Airtable plan: short browser TTL so a leader's edit propagates within a
+// minute on their own device, longer Netlify-CDN (s-maxage) so repeat hits
+// from other visitors hit the edge instead of Airtable. Set on 200 OK only —
+// errors must not be cached.
+export const CACHE = {
+  // Categories rarely change. Long TTL.
+  CATEGORIES: 'public, max-age=300, s-maxage=3600',
+  // Club lists / detail. Up to ~5 min stale at edge after a leader edit.
+  CLUBS:      'public, max-age=60, s-maxage=300',
+  // Privacy-sensitive: must always fetch fresh (Leader Email is the payload).
+  // Caching this anywhere — browser, edge, intermediate — would risk leakage.
+  NEVER:      'private, no-store, max-age=0',
+};
 
 export function env() {
   const token = process.env.AIRTABLE_TOKEN;
