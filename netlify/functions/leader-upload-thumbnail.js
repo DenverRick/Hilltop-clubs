@@ -72,7 +72,10 @@ export async function handler(event) {
   const text = await res.text();
   let data;
   try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
-  if (!res.ok) return json(res.status, { error: 'Airtable upload failed', details: data });
+  if (!res.ok) {
+    const reason = data?.error?.message || data?.error?.type || `HTTP ${res.status}`;
+    return json(res.status, { error: `Upload failed: ${reason}`, details: data });
+  }
 
   return json(200, { ok: true });
 }

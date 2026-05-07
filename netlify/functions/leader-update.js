@@ -64,12 +64,21 @@ export async function handler(event) {
     return json(400, { error: 'No allowed fields supplied' });
   }
 
+  // typecast lets Airtable coerce string values into singleSelect /
+  // multipleSelects options — creating new options on the fly when a
+  // leader adds a tag we haven't seen before. Without this, an unknown
+  // tag returns 422 "Cannot parse value for field Tags."
   const patch = await airtableFetch(`${e.baseId}/${e.tableClubs}/${record.id}`, {
     token: e.token,
     method: 'PATCH',
-    body: { fields: safeFields },
+    body: { fields: safeFields, typecast: true },
   });
-  if (!patch.ok) return json(patch.status, { error: 'Airtable update failed', details: patch.data });
+  if (!patch.ok) {
+    // Surface Airtable's specific reason to the form so leaders see what
+    // actually went wrong, not just "Airtable update failed."
+    const reason = patch.data?.error?.message || patch.data?.error?.type || `HTTP ${patch.status}`;
+    return json(patch.status, { error: `Update failed: ${reason}`, details: patch.data });
+  }
 
   return json(200, { ok: true, id: record.id, updated: Object.keys(safeFields) });
 }
