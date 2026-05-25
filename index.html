@@ -23,6 +23,14 @@
 
   <main>
 
+    <section id="this-week-view" hidden>
+      <div class="section-head">
+        <h3>📅 Clubs meeting this week</h3>
+        <a class="hint" href="https://hilltop-weekly-calendar.onrender.com/calendar/current" target="_blank" rel="noopener">Full calendar →</a>
+      </div>
+      <div class="grid grid-3" id="this-week-grid"></div>
+    </section>
+
     <section id="featured-view" hidden>
       <div class="section-head">
         <h3>Featured this week</h3>
@@ -147,8 +155,37 @@
         }).join('');
 
         renderFeatured(clubs);
+        renderThisWeek();
       } catch (err) {
         catGrid.innerHTML = `<div class="error">${escape(err.message)}</div>`;
+      }
+    }
+
+    // Pulls this week's events from MeetingSlots (via the Calendar's
+    // recurrence logic on the server) and renders a card for each. Failure
+    // is silent — section just stays hidden if the API call errors.
+    async function renderThisWeek() {
+      try {
+        const { events } = await ClubsAPI.getThisWeeksEvents();
+        if (!events || !events.length) return;
+        const grid = $('#this-week-grid');
+        grid.innerHTML = events.map((e) => {
+          const dayDate = new Date(e.date + 'T12:00:00');
+          const dayLabel = dayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+          const time = e.startTime + (e.endTime ? ` – ${e.endTime}` : '');
+          return `
+            <a class="card this-week-card" href="/club/${encodeURIComponent(e.clubSlug)}">
+              ${e.thumbnail ? `<img class="thumbnail" src="${escape(e.thumbnail)}" alt="" />` : ''}
+              <div class="day-pill">${escape(dayLabel)}</div>
+              <div class="name">${escape(e.clubName)}</div>
+              <div class="meeting">${escape(time)}${e.location ? ` · ${escape(e.location)}` : ''}</div>
+            </a>
+          `;
+        }).join('');
+        $('#this-week-view').hidden = false;
+      } catch (err) {
+        // intentionally silent — landing page still works
+        console.warn('this-weeks-events failed:', err);
       }
     }
 

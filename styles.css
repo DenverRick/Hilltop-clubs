@@ -308,6 +308,26 @@ h3 { font-size: 1.2rem; margin: 0 0 0.5rem; }
   border: 1px solid rgba(245, 158, 11, 0.22);
   position: relative;
 }
+
+/* "Meeting this week" card — green tint signals "happening soon, get over
+   here". Pulled from MeetingSlots via /api/get-this-weeks-events. */
+.this-week-card {
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid rgba(22, 163, 74, 0.28);
+  position: relative;
+}
+.this-week-card .day-pill {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.92);
+  color: #14532d;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  margin-top: 0.1rem;
+}
 .featured-card .featured-chip {
   align-self: flex-start;
   background: rgba(255, 255, 255, 0.92);
