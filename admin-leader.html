@@ -48,6 +48,10 @@
         <textarea id="Vibe / Demographics" rows="3"></textarea>
       </label>
 
+      <label>What to bring (for first-time attendees — e.g., "Bring snacks and $10 buy-in", "Wear comfortable shoes, supplies provided", "Just yourself!")
+        <textarea id="What to Bring" rows="3"></textarea>
+      </label>
+
       <label>Tags (comma-separated, e.g., "couples-friendly, drop-ins welcome, outdoors")
         <input id="Tags" type="text" placeholder="couples-friendly, drop-ins welcome" />
       </label>
@@ -119,7 +123,7 @@
     // Fields that map directly through. Tags need parsing into an array;
     // Member Count needs to be a number; everything else is a string.
     const STRING_FIELDS = [
-      'Short Blurb', 'Long Description', 'Vibe / Demographics',
+      'Short Blurb', 'Long Description', 'Vibe / Demographics', 'What to Bring',
       'Meeting Frequency', 'Meeting Day', 'Meeting Schedule', 'Meeting Time', 'Meeting Location',
       'YouTube URLs', 'External Website', 'TeamReach',
     ];
@@ -148,7 +152,7 @@
     // the form), so this is not a sensitive disclosure. Email-match still
     // gates the actual save.
     function clearFormFields() {
-      const ids = ['Short Blurb', 'Long Description', 'Vibe / Demographics', 'Tags',
+      const ids = ['Short Blurb', 'Long Description', 'Vibe / Demographics', 'What to Bring', 'Tags',
         'Meeting Frequency', 'Meeting Day', 'Meeting Schedule', 'Meeting Time',
         'Meeting Location', 'Member Count', 'YouTube URLs',
         'External Website', 'TeamReach'];
@@ -162,6 +166,7 @@
         document.getElementById('Short Blurb').value = club.blurb || '';
         document.getElementById('Long Description').value = club.description || '';
         document.getElementById('Vibe / Demographics').value = club.vibe || '';
+        document.getElementById('What to Bring').value = club.whatToBring || '';
         document.getElementById('Tags').value = (club.tags || []).join(', ');
         document.getElementById('Meeting Frequency').value = club.meetingFrequency || '';
         document.getElementById('Meeting Day').value = club.meetingDay || '';

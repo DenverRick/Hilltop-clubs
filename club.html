@@ -126,6 +126,7 @@
 
             ${club.description ? `<div class="club-description">${escape(club.description).replace(/\n/g, '<br>')}</div>` : ''}
             ${club.vibe ? `<div class="vibe">${escape(club.vibe)}</div>` : ''}
+            ${club.whatToBring ? `<div class="what-to-bring"><div class="wtb-label">👋 First time? Bring this:</div><div class="wtb-text">${escape(club.whatToBring).replace(/\n/g, '<br>')}</div></div>` : ''}
 
             ${videos.length ? `
               <div class="video-grid ${videos.length > 1 ? 'has-multiple' : ''}">

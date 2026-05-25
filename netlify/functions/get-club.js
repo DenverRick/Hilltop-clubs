@@ -46,6 +46,7 @@ export async function handler(event) {
       meetingLocation: f['Meeting Location'] || '',
       memberCount: f['Member Count'] ?? null,
       vibe: f['Vibe / Demographics'] || '',
+      whatToBring: f['What to Bring'] || '',
       youtubeUrls,
       thumbnail: f['Thumbnail Image']?.[0]?.thumbnails?.large?.url || f['Thumbnail Image']?.[0]?.url || '',
       website: f['External Website'] || '',

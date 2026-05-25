@@ -487,6 +487,28 @@ h3 { font-size: 1.2rem; margin: 0 0 0.5rem; }
   font-weight: 700;
 }
 
+/* "First time? Bring this" callout — green to feel welcoming, with a clear
+   label so first-time attendees know exactly what's expected. */
+.what-to-bring {
+  background: #f0fdf4;
+  border-left: 4px solid #16a34a;
+  padding: 1rem 1.15rem;
+  border-radius: 8px;
+  margin: 0 0 1.5rem;
+}
+.what-to-bring .wtb-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #15803d;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 0.35rem;
+}
+.what-to-bring .wtb-text {
+  font-size: 1.05rem;
+  color: #14532d;
+}
+
 .club-footer {
   display: flex;
   flex-direction: column;

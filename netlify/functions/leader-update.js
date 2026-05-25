@@ -13,6 +13,7 @@ const ALLOWED_FIELDS = new Set([
   'Meeting Location',
   'Member Count',
   'Vibe / Demographics',
+  'What to Bring',
   'YouTube URLs',
   'External Website',
   'TeamReach',
