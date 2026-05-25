@@ -8,3 +8,20 @@ node_modules/
 # Local working docs and source-of-truth files (may contain resident PII)
 *.pdf
 *.docx
+*.pptx
+*.xlsx
+handoff.md
+outreach-email.md
+yes-replies-tracker.md
+
+# Loose club photos / hero images / flyers staged locally before being attached
+# to Airtable. Don't track them in git — they're managed via the Clubs table.
+*.jpg
+*.jpeg
+*.png
+
+# But keep the landing-page hero photo (referenced from styles.css)
+!clubhouse-hero.png
+
+# Local working folders
+golf club/
