@@ -25,7 +25,7 @@ Loose club photos / hero images / flyers staged locally before being attached to
 
 ## Deploy
 
-GitHub `DenverRick/hilltop-clubs` → Netlify auto-deploy on push to `main`.
+GitHub `DenverRick/Hilltop-clubs` → Netlify auto-deploy on push to `main`.
 
 ## Manual setup checklist (one-time)
 
