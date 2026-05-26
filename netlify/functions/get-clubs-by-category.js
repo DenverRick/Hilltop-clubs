@@ -44,6 +44,7 @@ export async function handler(event) {
       slug: f['Slug'] || '',
       category: f['Primary Category'] || '',
       blurb: f['Short Blurb'] || '',
+      whatToBring: f['What to Bring'] || '',
       tags: f['Tags'] || [],
       meetingDay: f['Meeting Day'] || '',
       meetingTime: f['Meeting Time'] || '',

@@ -531,6 +531,26 @@ h3 { font-size: 1.2rem; margin: 0 0 0.5rem; }
   color: #14532d;
 }
 
+/* One-line newcomer-info preview on category + search cards. The detail
+   page shows the full .what-to-bring callout; this is the quick-scan
+   version so visitors can compare clubs on first-timer friendliness
+   without clicking into each one. Full text exposed via the title attr
+   on hover; CSS line-clamp handles truncation by container width. */
+.wtb-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.92rem;
+  color: #15803d;
+  background: #f0fdf4;
+  border-left: 3px solid #16a34a;
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  margin: 0.35rem 0 0.1rem;
+}
+
 .club-footer {
   display: flex;
   flex-direction: column;

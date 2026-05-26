@@ -103,6 +103,14 @@
       const text = cadence && time ? `${cadence} at ${time}` : (cadence || time);
       return `<div class="meeting">${escape(text)}</div>`;
     }
+    // One-line preview of the leader's "What to Bring" guidance for
+    // first-time attendees. Used on the search-results cards below; the
+    // full text appears as a callout on the club detail page.
+    function wtbPreviewHTML(club) {
+      if (!club.whatToBring) return '';
+      const oneLine = club.whatToBring.replace(/\n+/g, ' ').trim();
+      return `<div class="wtb-preview" title="${escape(oneLine)}">👋 ${escape(oneLine)}</div>`;
+    }
 
     let allClubs = null;
     let categoriesByName = new Map();
@@ -241,6 +249,7 @@
             ${cardChip(c)}
             <div class="name">${escape(c.name)}</div>
             <div class="blurb">${escape(c.blurb)}</div>
+            ${wtbPreviewHTML(c)}
             ${meetingLineHTML(c)}
           </a>
         `).join('');

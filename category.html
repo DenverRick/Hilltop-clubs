@@ -46,6 +46,15 @@
       const text = cadence && time ? `${cadence} at ${time}` : (cadence || time);
       return `<div class="meeting">${escape(text)}</div>`;
     }
+    // One-line preview of the leader's "What to Bring" guidance for
+    // first-time attendees. Collapses newlines so multi-line entries
+    // read as a sentence; CSS clamps it to a single line with ellipsis.
+    // Full text is in the title attribute (hover) and on the detail page.
+    function wtbPreviewHTML(club) {
+      if (!club.whatToBring) return '';
+      const oneLine = club.whatToBring.replace(/\n+/g, ' ').trim();
+      return `<div class="wtb-preview" title="${escape(oneLine)}">👋 ${escape(oneLine)}</div>`;
+    }
 
     // Slug comes from ?slug= when Netlify rewrote /category/:slug → category.html?slug=...
     // Fall back to the last path segment so /category/foo also works in static-preview
@@ -89,6 +98,7 @@
           ${cardChip(c)}
           <div class="name">${escape(c.name)}</div>
           <div class="blurb">${escape(c.blurb)}</div>
+          ${wtbPreviewHTML(c)}
           ${meetingLineHTML(c)}
           ${(c.tags && c.tags.length) ? `<div class="tags">${c.tags.map((t) => `<span class="tag">${escape(t)}</span>`).join('')}</div>` : ''}
         </a>
