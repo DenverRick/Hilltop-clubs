@@ -11,11 +11,15 @@ node_modules/
 *.pptx
 *.xlsx
 handoff.md
+memory.md
 outreach-email.md
 yes-replies-tracker.md
 
 # Loose club photos / hero images / flyers staged locally before being attached
-# to Airtable. Don't track them in git — they're managed via the Clubs table.
+# to Airtable. Drop them into working-photos/ to keep the repo root tidy.
+# The extension rules below are a safety net so a stray image at root
+# (e.g. dragged in from Downloads) doesn't get accidentally committed.
+working-photos/
 *.jpg
 *.jpeg
 *.png
