@@ -318,6 +318,11 @@ h3 { font-size: 1.2rem; margin: 0 0 0.5rem; }
   border: 1px solid rgba(22, 163, 74, 0.28);
   position: relative;
 }
+/* Display-only (no link) — drop the hover lift so it doesn't imply a click. */
+.this-week-card:hover {
+  box-shadow: var(--shadow);
+  transform: none;
+}
 .this-week-card .day-pill {
   align-self: flex-start;
   background: rgba(255, 255, 255, 0.92);

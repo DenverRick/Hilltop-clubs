@@ -34,16 +34,18 @@ netlify/functions/
   get-clubs-by-category.js   Also serves ?all=1 for landing-page search
   get-club.js
   get-club-mailto.js
+  get-mpr-today.js           Today's MPR-room events for the landing page; reads the SEPARATE "Hilltop Clubhouse" base
   leader-update.js
   leader-upload-thumbnail.js
 ```
 
 ## Required env vars (Netlify dashboard)
 
-- `AIRTABLE_TOKEN` — personal access token, scoped to this base only
+- `AIRTABLE_TOKEN` — personal access token. Read+write on the Clubs base (`AIRTABLE_BASE_ID`); also needs `data.records:read` on the **"Hilltop Clubhouse"** base (`appNJgCpn3NJCRC8U`) for `get-mpr-today.js`.
 - `AIRTABLE_BASE_ID` — `appXXXX…`
 - `AIRTABLE_TABLE_CLUBS` — `tblXXXX…`
 - `AIRTABLE_TABLE_CATEGORIES` — `tblXXXX…`
+- `MPR_BASE_ID` — optional override for the Clubhouse base read by `get-mpr-today.js` (defaults to `appNJgCpn3NJCRC8U`)
 
 ## Airtable schema
 
