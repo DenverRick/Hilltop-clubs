@@ -15,21 +15,10 @@
         <span><strong id="stat-clubs">0</strong> clubs</span>
         <span><strong id="stat-cats">8</strong> categories</span>
       </div>
-      <a class="hero-cta" href="https://hilltop-weekly-calendar.onrender.com/calendar/current" target="_blank" rel="noopener">
-        📅 This Week's Events &nbsp;→
-      </a>
     </div>
   </header>
 
   <main>
-
-    <section id="this-week-view" hidden>
-      <div class="section-head">
-        <h3>📅 Clubs meeting today in MPR</h3>
-        <a class="hint" href="https://hilltop-weekly-calendar.onrender.com/calendar/current" target="_blank" rel="noopener">Full calendar →</a>
-      </div>
-      <div class="grid grid-3" id="this-week-grid"></div>
-    </section>
 
     <section id="featured-view" hidden>
       <div class="section-head">
@@ -163,38 +152,8 @@
         }).join('');
 
         renderFeatured(clubs);
-        renderMprToday();
       } catch (err) {
         catGrid.innerHTML = `<div class="error">${escape(err.message)}</div>`;
-      }
-    }
-
-    // Pulls TODAY's Multi-Purpose Room events from the MPR wall-display's
-    // published Events base — the same list the in-room iPad shows. The
-    // weekly Calendar app is what populates that base (overrides applied,
-    // cancellations hidden, MP/Kitchen rooms only), so this includes events
-    // that aren't tied to a club record. Cards are display-only: there's no
-    // club slug to deep-link to, and the clean-up workflow lives in the
-    // separate Clubhouse MPR app. The hero CTA already links to the full
-    // weekly calendar. Failure is silent — section just stays hidden.
-    async function renderMprToday() {
-      try {
-        const { events } = await ClubsAPI.getMprToday();
-        if (!events || !events.length) return;
-        const grid = $('#this-week-grid');
-        grid.innerHTML = events.map((e) => {
-          const time = e.startTime + (e.endTime ? ` – ${e.endTime}` : '');
-          return `
-            <div class="card this-week-card">
-              <div class="name">${escape(e.name)}</div>
-              <div class="meeting">${escape(time)}${e.room ? ` · ${escape(e.room)}` : ''}</div>
-            </div>
-          `;
-        }).join('');
-        $('#this-week-view').hidden = false;
-      } catch (err) {
-        // intentionally silent — landing page still works
-        console.warn('mpr-today failed:', err);
       }
     }
 

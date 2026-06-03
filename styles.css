@@ -107,28 +107,6 @@ header.site-hero .stats {
 }
 header.site-hero .stats strong { color: white; font-size: 1.1rem; font-weight: 700; }
 
-/* Muted dark amber call-to-action button in the hero — links to the live
-   resident weekly calendar at hilltop-weekly-calendar.onrender.com.
-   Toned down a second time per Rick: deeper amber that reads as warm
-   without competing with the clubhouse photo behind it. */
-header.site-hero .hero-cta {
-  display: inline-block;
-  margin-top: 1.25rem;
-  padding: 0.7rem 1.4rem;
-  background: #a16207;
-  color: white;
-  font-weight: 700;
-  font-size: 1rem;
-  border-radius: 999px;
-  text-decoration: none;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.22);
-  transition: transform 0.1s, background 0.1s;
-}
-header.site-hero .hero-cta:hover { background: #854d0e; transform: translateY(-1px); }
-header.site-hero .hero-cta:active { transform: translateY(0); }
-@media (min-width: 768px) {
-  header.site-hero .hero-cta { font-size: 1.1rem; padding: 0.85rem 1.7rem; }
-}
 /* Bottom search bar — quieter than the hero, but a clear convenience for users
    who scroll to the bottom and want to search without going back up. */
 .search-bottom {
@@ -311,30 +289,6 @@ h3 { font-size: 1.2rem; margin: 0 0 0.5rem; }
   position: relative;
 }
 
-/* "Meeting this week" card — green tint signals "happening soon, get over
-   here". Pulled from MeetingSlots via /api/get-this-weeks-events. */
-.this-week-card {
-  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
-  border: 1px solid rgba(22, 163, 74, 0.28);
-  position: relative;
-}
-/* Display-only (no link) — drop the hover lift so it doesn't imply a click. */
-.this-week-card:hover {
-  box-shadow: var(--shadow);
-  transform: none;
-}
-.this-week-card .day-pill {
-  align-self: flex-start;
-  background: rgba(255, 255, 255, 0.92);
-  color: #14532d;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  border: 1px solid rgba(22, 163, 74, 0.3);
-  margin-top: 0.1rem;
-}
 .featured-card .featured-chip {
   align-self: flex-start;
   background: rgba(255, 255, 255, 0.92);
