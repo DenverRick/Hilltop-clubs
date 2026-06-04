@@ -19,21 +19,15 @@
 
   <main>
 
-    <section id="today-view" hidden>
-      <div class="section-head">
-        <h3>📅 Clubs meeting today</h3>
+    <section id="events-view" hidden>
+      <div class="section-head events-head">
+        <h3>📅 Club meetings</h3>
+        <div class="day-toggle" role="group" aria-label="Choose day">
+          <button class="day-toggle-btn active" id="toggle-today" type="button">Today</button>
+          <button class="day-toggle-btn" id="toggle-tomorrow" type="button">Tomorrow</button>
+        </div>
       </div>
-      <div id="today-list" class="event-list"></div>
-    </section>
-
-    <section id="week-view" hidden>
-      <div class="section-head">
-        <button class="week-toggle" id="week-toggle" type="button" aria-expanded="false">
-          <span>📆 This week's club events</span>
-          <span class="week-toggle-chevron" aria-hidden="true">▾</span>
-        </button>
-      </div>
-      <div id="week-body" class="week-body" hidden></div>
+      <div id="events-grid" class="events-grid"></div>
     </section>
 
     <section id="featured-view" hidden>
@@ -61,6 +55,15 @@
       </div>
     </section>
   </main>
+
+  <!-- Event detail modal — opened when an event card is clicked. -->
+  <div id="event-modal" class="event-modal" hidden>
+    <div class="event-modal-backdrop" id="event-modal-backdrop"></div>
+    <div class="event-modal-card" role="dialog" aria-modal="true" aria-labelledby="em-title">
+      <button class="event-modal-close" id="event-modal-close" type="button" aria-label="Close">×</button>
+      <div id="event-modal-content"></div>
+    </div>
+  </div>
 
   <footer class="site-footer">
     <div>
@@ -261,72 +264,98 @@
 
       return { google, outlook, apple };
     }
-    function eventRowHTML(ev, { showDay } = {}) {
-      const links = ev.cancelled ? null : calendarLinks(ev);
-      const timeText = ev.startTime ? `${escape(ev.startTime)}${ev.endTime ? ` – ${escape(ev.endTime)}` : ''}` : '';
+    // Compact, clickable event card. data-idx points into the day's event
+    // array so the click handler can pull the full record for the modal.
+    function eventCardHTML(ev, idx) {
       return `
-        <div class="event-row ${ev.cancelled ? 'cancelled' : ''}">
-          <div class="event-main">
-            ${showDay ? `<span class="event-day">${escape(ev.dayLabel)}</span>` : ''}
-            <a class="event-club" href="/club/${encodeURIComponent(ev.clubSlug)}">${escape(ev.eventName || ev.clubName)}</a>
-            ${ev.cancelled ? '<span class="event-cancelled-tag">Cancelled</span>' : ''}
-            <span class="event-meta">${timeText}${ev.location ? ` · ${escape(ev.location)}` : ''}</span>
-            ${ev.note ? `<span class="event-note">${escape(ev.note)}</span>` : ''}
-          </div>
-          ${links ? `
-            <div class="event-cal">
-              <span class="event-cal-label">Add to:</span>
-              <a href="${links.google}" target="_blank" rel="noopener">Google</a>
-              <a href="${links.apple}" download="event.ics">Apple</a>
-              <a href="${links.outlook}" target="_blank" rel="noopener">Outlook</a>
-            </div>` : ''}
-        </div>
+        <button class="event-card ${ev.cancelled ? 'cancelled' : ''}" type="button" data-idx="${idx}">
+          <div class="event-card-name">${escape(ev.eventName || ev.clubName)}</div>
+          <div class="event-card-time">${ev.startTime ? escape(ev.startTime) : ''}${ev.cancelled ? ' · Cancelled' : ''}</div>
+          ${ev.location ? `<div class="event-card-loc">${escape(ev.location)}</div>` : ''}
+        </button>
       `;
     }
+
+    // Event state: arrays for today + tomorrow, plus which day is showing.
+    let eventsByDay = { today: [], tomorrow: [] };
+    let currentDay = 'today';
+
+    function renderDay(which) {
+      currentDay = which;
+      const list = eventsByDay[which] || [];
+      const grid = $('#events-grid');
+      $('#toggle-today').classList.toggle('active', which === 'today');
+      $('#toggle-tomorrow').classList.toggle('active', which === 'tomorrow');
+      if (!list.length) {
+        grid.innerHTML = `<div class="events-empty">No club meetings ${which === 'today' ? 'today' : 'tomorrow'}.</div>`;
+        return;
+      }
+      grid.innerHTML = list.map((e, i) => eventCardHTML(e, i)).join('');
+    }
+
+    function openEventModal(ev) {
+      const links = ev.cancelled ? null : calendarLinks(ev);
+      const timeText = ev.startTime ? `${escape(ev.startTime)}${ev.endTime ? ` – ${escape(ev.endTime)}` : ''}` : '';
+      $('#event-modal-content').innerHTML = `
+        <div class="em-title" id="em-title">${escape(ev.eventName || ev.clubName)}</div>
+        <div class="em-meta">${escape(ev.dayLabel)}${timeText ? ` · ${timeText}` : ''}</div>
+        ${ev.location ? `<div class="em-loc">📍 ${escape(ev.location)}</div>` : ''}
+        ${ev.note ? `<div class="em-note">${escape(ev.note)}</div>` : ''}
+        ${ev.cancelled ? '<div class="em-cancelled">⚠️ This meeting is cancelled this week.</div>' : ''}
+        <a class="em-clublink" href="/club/${encodeURIComponent(ev.clubSlug)}">More about ${escape(ev.clubName)} →</a>
+        ${links ? `
+          <div class="em-cal-label">Add to your calendar</div>
+          <div class="em-cal">
+            <a href="${links.google}" target="_blank" rel="noopener">📅 Google</a>
+            <a href="${links.apple}" download="event.ics">🍎 Apple</a>
+            <a href="${links.outlook}" target="_blank" rel="noopener">🪟 Outlook</a>
+          </div>` : ''}
+      `;
+      $('#event-modal').hidden = false;
+      document.body.style.overflow = 'hidden';
+    }
+    function closeEventModal() {
+      $('#event-modal').hidden = true;
+      document.body.style.overflow = '';
+    }
+    $('#event-modal-close').addEventListener('click', closeEventModal);
+    $('#event-modal-backdrop').addEventListener('click', closeEventModal);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#event-modal').hidden) closeEventModal(); });
+
+    // Card clicks (delegated) open the modal for the clicked event.
+    $('#events-grid').addEventListener('click', (e) => {
+      const card = e.target.closest('.event-card');
+      if (!card) return;
+      const idx = parseInt(card.getAttribute('data-idx'), 10);
+      const ev = eventsByDay[currentDay]?.[idx];
+      if (ev) openEventModal(ev);
+    });
+    $('#toggle-today').addEventListener('click', () => renderDay('today'));
+    $('#toggle-tomorrow').addEventListener('click', () => renderDay('tomorrow'));
+
     async function renderEvents() {
       try {
         const { events, today } = await ClubsAPI.getWeekEvents();
         if (!events || !events.length) return;
 
-        const todayEvents = events.filter((e) => e.date === today);
-        const weekEvents = events; // full rolling window, grouped by day
+        // tomorrow = today + 1 day (string math via Date, local).
+        const [ty, tm, td] = today.split('-').map(Number);
+        const tomorrowDate = new Date(ty, tm - 1, td + 1);
+        const p = (n) => String(n).padStart(2, '0');
+        const tomorrow = `${tomorrowDate.getFullYear()}-${p(tomorrowDate.getMonth() + 1)}-${p(tomorrowDate.getDate())}`;
 
-        if (todayEvents.length) {
-          $('#today-list').innerHTML = todayEvents.map((e) => eventRowHTML(e, { showDay: false })).join('');
-          $('#today-view').hidden = false;
-        }
+        eventsByDay.today = events.filter((e) => e.date === today);
+        eventsByDay.tomorrow = events.filter((e) => e.date === tomorrow);
 
-        if (weekEvents.length) {
-          // Group by dayLabel, preserving sort order.
-          const groups = [];
-          const byDay = new Map();
-          for (const e of weekEvents) {
-            if (!byDay.has(e.date)) { byDay.set(e.date, { label: e.dayLabel, rows: [] }); groups.push(e.date); }
-            byDay.get(e.date).rows.push(e);
-          }
-          $('#week-body').innerHTML = groups.map((d) => {
-            const g = byDay.get(d);
-            return `
-              <div class="week-day-group">
-                <div class="week-day-label">${escape(g.label)}</div>
-                ${g.rows.map((e) => eventRowHTML(e, { showDay: false })).join('')}
-              </div>`;
-          }).join('');
-          $('#week-view').hidden = false;
-        }
+        // Only show the section if there's something today or tomorrow.
+        if (!eventsByDay.today.length && !eventsByDay.tomorrow.length) return;
+        renderDay('today');
+        $('#events-view').hidden = false;
       } catch (err) {
         // Silent — landing page still works without the events section.
         console.warn('week-events failed:', err);
       }
     }
-    $('#week-toggle').addEventListener('click', () => {
-      const body = $('#week-body');
-      const btn = $('#week-toggle');
-      const open = body.hidden;
-      body.hidden = !open;
-      btn.setAttribute('aria-expanded', String(open));
-      btn.classList.toggle('open', open);
-    });
 
     function matchClub(club, q) {
       const hay = [club.name, club.blurb, club.category, ...(club.tags || [])].join(' ').toLowerCase();
@@ -336,8 +365,7 @@
     async function runSearch(q) {
       const view = $('#categories-view');
       const featured = $('#featured-view');
-      const todayView = $('#today-view');
-      const weekView = $('#week-view');
+      const eventsView = $('#events-view');
       const results = $('#search-results');
       const grid = $('#search-grid');
       if (!q) {
@@ -345,14 +373,12 @@
         view.hidden = false;
         // Restore rows only if they had content rendered.
         featured.hidden = !featured.querySelector('.card');
-        todayView.hidden = !todayView.querySelector('.event-row');
-        weekView.hidden = !weekView.querySelector('.week-day-group');
+        eventsView.hidden = !eventsView.querySelector('.event-card, .events-empty');
         return;
       }
       view.hidden = true;
       featured.hidden = true;
-      todayView.hidden = true;
-      weekView.hidden = true;
+      eventsView.hidden = true;
       results.hidden = false;
       grid.innerHTML = '<div class="loading">Searching…</div>';
       try {

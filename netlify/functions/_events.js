@@ -6,7 +6,7 @@
 //   - Weeks        (gated by Status=Published)
 //   - WeekOverrides (per-week cancels / overrides)
 
-import { airtableFetch, escapeFormulaString } from './_airtable.js';
+import { airtableFetch } from './_airtable.js';
 import { expandRecurrence, fmt } from './_recurrence.js';
 
 const TABLE_MEETING_SLOTS = 'tblO3Vg7yoxioywpN';
@@ -29,6 +29,46 @@ function weekStartFor(date) {
   const offset = day === 0 ? 6 : day - 1;
   d.setDate(d.getDate() - offset);
   return fmt(d);
+}
+
+// --- Name matching --------------------------------------------------------
+// Most MeetingSlots don't carry an explicit Club link, so we fall back to
+// matching the slot's name to a club by significant words — mirroring the
+// Calendar app's club-match.js. Tokens drop punctuation and filler words
+// ("club", "the", "class", "group").
+const FILLER = new Set(['club', 'the', 'class', 'group', 'a', 'of', 'and']);
+function nameTokens(name) {
+  return new Set(
+    String(name || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter((t) => t && !FILLER.has(t))
+  );
+}
+function isSubset(small, big) {
+  for (const t of small) if (!big.has(t)) return false;
+  return true;
+}
+// Build a name index over the opted-in clubs.
+function buildClubIndex(clubs) {
+  return clubs.map((c) => ({ ...c, tokens: nameTokens(c.name) }));
+}
+// Resolve an event name to one opted-in club. Exact token-set match wins;
+// otherwise a unique club whose distinctive words are all contained in the
+// event name (e.g. "Social Bridge" → "Bridge Club"). Ambiguous → null.
+function matchClubByName(eventName, clubIndex) {
+  const ev = nameTokens(eventName);
+  if (!ev.size) return null;
+  const key = [...ev].sort().join(' ');
+  // 1. exact token-set equality
+  for (const c of clubIndex) {
+    if (c.tokens.size && [...c.tokens].sort().join(' ') === key) return c;
+  }
+  // 2. unique club whose tokens ⊆ event tokens
+  const subs = clubIndex.filter((c) => c.tokens.size && isSubset(c.tokens, ev));
+  if (subs.length === 1) return subs[0];
+  return null;
 }
 
 /**
@@ -58,10 +98,14 @@ export async function computeAllClubEvents({ baseId, token, tableClubs, windowSt
   });
   if (!clubsRes.ok) return { ok: false, status: clubsRes.status, error: 'Airtable error fetching clubs' };
   const clubById = new Map();
+  const clubList = [];
   for (const c of clubsRes.data.records || []) {
-    clubById.set(c.id, { name: c.fields['Name'] || '', slug: c.fields['Slug'] || '' });
+    const club = { name: c.fields['Name'] || '', slug: c.fields['Slug'] || '' };
+    clubById.set(c.id, club);
+    clubList.push(club);
   }
   if (!clubById.size) return { ok: true, events: [] };
+  const clubIndex = buildClubIndex(clubList);
 
   // 2. All active MeetingSlots.
   const slotsRes = await airtableFetch(`${baseId}/${TABLE_MEETING_SLOTS}`, {
@@ -104,8 +148,12 @@ export async function computeAllClubEvents({ baseId, token, tableClubs, windowSt
   // 5. Expand each slot, join its club + overrides.
   const occurrences = [];
   for (const slot of slots) {
-    const club = clubById.get(slot.fields['Club']?.[0]);
-    if (!club) continue; // slot not tied to an opted-in directory club
+    // Resolve the slot's club: explicit Club link first, else name-match the
+    // slot's Event Name against the opted-in clubs. Slots that match neither
+    // (community classes like Yoga, Tai Chi) are skipped.
+    let club = clubById.get(slot.fields['Club']?.[0]);
+    if (!club) club = matchClubByName(slot.fields['Event Name'], clubIndex);
+    if (!club) continue;
 
     const dates = expandRecurrence(
       {
@@ -147,121 +195,34 @@ export async function computeAllClubEvents({ baseId, token, tableClubs, windowSt
 }
 
 /**
- * Compute upcoming meeting occurrences for a club.
+ * Compute upcoming meeting occurrences for a single club, over a 28-day
+ * window. Built on top of computeAllClubEvents so it inherits the same
+ * link-or-name-match resolution — a club whose MeetingSlot has no explicit
+ * Club link still gets its meetings via name matching.
  *
  * @param {object} args
  * @param {string} args.baseId
  * @param {string} args.token
- * @param {object} args.clubRecord - the Airtable record (with .id and .fields including Name)
+ * @param {string} args.tableClubs
+ * @param {object} args.clubRecord - the Airtable record (with .fields.Slug)
  * @returns {Promise<{ ok: boolean, status?: number, error?: string, events?: Array }>}
  */
-export async function computeUpcomingEvents({ baseId, token, clubRecord }) {
-  const clubName = clubRecord.fields['Name'];
-  if (!clubName) return { ok: true, events: [] };
+export async function computeUpcomingEvents({ baseId, token, tableClubs, clubRecord }) {
+  const slug = clubRecord.fields['Slug'];
+  if (!slug) return { ok: true, events: [] };
 
-  // Fetch active MeetingSlots linked to this club.
-  const slotsRes = await airtableFetch(`${baseId}/${TABLE_MEETING_SLOTS}`, {
-    token,
-    query: {
-      filterByFormula: `AND(FIND('${escapeFormulaString(clubName)}', ARRAYJOIN({Club})), {Active} = TRUE())`,
-    },
-  });
-  if (!slotsRes.ok) return { ok: false, status: slotsRes.status, error: 'Airtable error fetching slots' };
-  const slots = slotsRes.data.records || [];
-  if (!slots.length) return { ok: true, events: [] };
-
-  // Date window.
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const windowEnd = new Date(today);
   windowEnd.setDate(windowEnd.getDate() + WINDOW_DAYS);
 
-  // Published weeks in window.
-  const weekFloor = new Date(today);
-  weekFloor.setDate(weekFloor.getDate() - 7);
-  const weeksRes = await airtableFetch(`${baseId}/${TABLE_WEEKS}`, {
-    token,
-    query: {
-      filterByFormula: `AND({Status} = 'Published', IS_AFTER({Week Start}, '${fmt(weekFloor)}'), IS_BEFORE({Week Start}, '${fmt(windowEnd)}'))`,
-    },
-  });
-  if (!weeksRes.ok) return { ok: false, status: weeksRes.status, error: 'Airtable error fetching weeks' };
-  const publishedWeekStarts = new Set(
-    (weeksRes.data.records || [])
-      .map((r) => r.fields['Week Start'])
-      .filter(Boolean)
-  );
-  const publishedWeekIdByStart = new Map();
-  (weeksRes.data.records || []).forEach((r) => {
-    if (r.fields['Week Start']) publishedWeekIdByStart.set(r.fields['Week Start'], r.id);
-  });
+  const all = await computeAllClubEvents({ baseId, token, tableClubs, windowStart: today, windowEnd });
+  if (!all.ok) return all;
 
-  // WeekOverrides for our slots.
-  const slotIds = slots.map((s) => s.id);
-  const overrideRes = await airtableFetch(`${baseId}/${TABLE_WEEK_OVERRIDES}`, {
-    token,
-    query: {
-      filterByFormula: `OR(${slotIds.map((id) => `FIND('${id}', ARRAYJOIN({Slot}))`).join(',')})`,
-    },
-  });
-  if (!overrideRes.ok) return { ok: false, status: overrideRes.status, error: 'Airtable error fetching overrides' };
-
-  const overrideMap = new Map();
-  for (const o of overrideRes.data.records || []) {
-    const slotIdLinked = o.fields['Slot']?.[0];
-    const weekIdLinked = o.fields['Week']?.[0];
-    if (!slotIdLinked || !weekIdLinked) continue;
-    for (const [start, id] of publishedWeekIdByStart) {
-      if (id === weekIdLinked) {
-        overrideMap.set(`${slotIdLinked}|${start}`, o.fields);
-        break;
-      }
-    }
-  }
-
-  // Expand and merge.
-  const occurrences = [];
-  for (const slot of slots) {
-    const slotFields = slot.fields;
-    const dates = expandRecurrence(
-      {
-        day: slotFields['Day'],
-        recurrence: slotFields['Recurrence'],
-        referenceDate: slotFields['Recurrence Reference Date'],
-      },
-      today,
-      windowEnd
-    );
-
-    for (const date of dates) {
-      const wkStart = weekStartFor(date);
-      if (!publishedWeekStarts.has(wkStart)) continue;
-
-      const override = overrideMap.get(`${slot.id}|${wkStart}`);
-      const overrideType = override?.['Override Type'];
-      if (overrideType === 'Cancel') continue;
-
-      const startTime = override?.['Start Time'] || slotFields['Start Time'] || '';
-      const endTime = override?.['End Time'] || slotFields['End Time'] || '';
-      const location = override?.['Location'] || slotFields['Location'] || '';
-      const note = override?.['Note'] || slotFields['Default Note'] || '';
-      const slotName = slotFields['Event Name'] || clubName;
-
-      occurrences.push({
-        date: fmt(date),
-        dayLabel: formatDayLabel(date),
-        startTime,
-        endTime,
-        location,
-        note,
-        slotName,
-      });
-    }
-  }
-
-  occurrences.sort((a, b) => {
-    if (a.date !== b.date) return a.date.localeCompare(b.date);
-    return a.startTime.localeCompare(b.startTime);
-  });
-  return { ok: true, events: occurrences.slice(0, MAX_OCCURRENCES) };
+  // Per-club view hides cancelled meetings (the all-clubs feed keeps them for
+  // the week grid; a single club's "upcoming" list reads cleaner without them).
+  const events = all.events
+    .filter((e) => e.clubSlug === slug && !e.cancelled)
+    .slice(0, MAX_OCCURRENCES);
+  return { ok: true, events };
 }

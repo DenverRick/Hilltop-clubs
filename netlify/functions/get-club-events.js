@@ -38,6 +38,7 @@ export async function handler(event) {
   const result = await computeUpcomingEvents({
     baseId: e.baseId,
     token: e.token,
+    tableClubs: e.tableClubs,
     clubRecord,
   });
 
