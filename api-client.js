@@ -25,6 +25,7 @@
     getClubEvents: (slug) => getJSON(`/api/get-club-events?slug=${encodeURIComponent(slug)}`),
     getMprToday: () => getJSON('/api/get-mpr-today'),
     getClubMailto: (slug) => getJSON(`/api/get-club-mailto?slug=${encodeURIComponent(slug)}`),
+    leaderVerify: (payload) => postJSON('/api/leader-verify', payload),
     leaderUpdate: (payload) => postJSON('/api/leader-update', payload),
     leaderUploadThumbnail: (payload) => postJSON('/api/leader-upload-thumbnail', payload),
     leaderUploadFlyer: (payload) => postJSON('/api/leader-upload-flyer', payload),

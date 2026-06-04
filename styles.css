@@ -781,18 +781,57 @@ form.leader-form .checkbox-row strong { display: block; font-weight: 600; margin
 .draft-output .draft-body { min-height: 12rem; resize: vertical; }
 .draft-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.4rem; }
 
-/* Cancel row at the top of the leader form — right-aligned so it doesn't
-   compete with the Club picker below it. */
-form.leader-form .form-cancel-row {
-  display: flex;
-  justify-content: flex-end;
-}
 /* Bottom action row — Save + Cancel side by side. */
 form.leader-form .form-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
   align-items: center;
+}
+
+/* Login card — visually distinct boxed step holding the club picker + email +
+   Log in button. Separates "who are you" from "what you're editing". */
+.login-card {
+  background: #f8fafc;
+  border: 1px solid var(--gray-light);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: var(--shadow);
+}
+.login-card .login-card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--dark);
+}
+.login-card .login-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+/* Edit-section banner — confirms which club is being edited and offers a way
+   back to the login step. */
+.edit-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  background: #ecfdf5;
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: #065f46;
+}
+.btn-small {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.9rem;
 }
 
 footer.site-footer {

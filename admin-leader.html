@@ -14,11 +14,10 @@
 
   <main>
     <p>
-      Pick your club, enter the email address management has on file for you
-      (this is how we verify it's really you), then edit any of the fields
-      below. The form pre-fills with what's currently on your page — just
-      change what you want updated and leave the rest. Only your own row
-      can be edited.
+      Pick your club and enter the email address management has on file for you,
+      then click <strong>Log in</strong>. Once we confirm it's you, the edit
+      fields appear — pre-filled with what's currently on your page, so you only
+      change what you want. Only your own club can be edited.
     </p>
     <p class="helper-note">
       Note: leaving a field blank keeps the existing value (it doesn't erase it).
@@ -26,20 +25,35 @@
     </p>
 
     <form class="leader-form" id="leader-form">
-      <div class="form-cancel-row">
-        <button class="btn btn-secondary" id="cancel-top" type="button">Cancel</button>
+      <!-- Step 1: login card. Club + email + Log in. Visually distinct from
+           the edit fields, which stay hidden until verification succeeds. -->
+      <div class="login-card" id="login-card">
+        <div class="login-card-title">Club leader sign-in</div>
+
+        <label>Club
+          <select id="slug" required>
+            <option value="">Loading…</option>
+          </select>
+        </label>
+
+        <label>Club Leader's email (must match our records)
+          <input id="submitter_email" type="email" required autocomplete="email" />
+          <span id="email-hint" class="field-hint" hidden></span>
+        </label>
+
+        <div class="login-actions">
+          <button class="btn btn-primary" id="login-btn" type="button">Log in</button>
+          <button class="btn btn-secondary" id="cancel-top" type="button">Cancel</button>
+        </div>
+        <div id="login-status" class="form-status" hidden></div>
       </div>
 
-      <label>Club
-        <select id="slug" required>
-          <option value="">Loading…</option>
-        </select>
-      </label>
-
-      <label>Club Leader's email (must match our records)
-        <input id="submitter_email" type="email" required autocomplete="email" />
-        <span id="email-hint" class="field-hint" hidden></span>
-      </label>
+      <!-- Step 2: edit fields. Hidden until login verified. -->
+      <div id="edit-section" hidden>
+        <div class="edit-banner">
+          <span id="edit-banner-text">Editing your club</span>
+          <button class="btn btn-secondary btn-small" id="switch-club" type="button">Switch club</button>
+        </div>
 
       <label>Short blurb (one sentence for the club view)
         <input id="Short Blurb" type="text" maxlength="160" />
@@ -149,6 +163,7 @@
         <button class="btn btn-secondary" id="cancel-bottom" type="button">Cancel</button>
       </div>
       <div id="status" class="form-status" hidden></div>
+      </div><!-- /#edit-section -->
     </form>
   </main>
 
@@ -226,7 +241,57 @@
         setStatus('error', `Couldn't load current values: ${err.message}`);
       }
     }
-    $('#slug').addEventListener('change', (ev) => loadCurrentValues(ev.target.value.trim()));
+    // --- Login gate -------------------------------------------------------
+    // Fields stay hidden until the leader's email is verified against the
+    // club's Leader Email on file. Switching the club (or editing the email)
+    // after logging in collapses back to the login step so a stale session
+    // can't edit the wrong club.
+    function setLoginStatus(kind, message) {
+      const el = $('#login-status');
+      if (!message) { el.hidden = true; return; }
+      el.hidden = false;
+      el.className = `form-status ${kind}`;
+      el.textContent = message;
+    }
+    function collapseToLogin() {
+      $('#edit-section').hidden = true;
+      $('#login-card').hidden = false;
+    }
+    function revealEditSection(clubName) {
+      $('#edit-banner-text').textContent = clubName ? `Editing: ${clubName}` : 'Editing your club';
+      $('#login-card').hidden = true;
+      $('#edit-section').hidden = false;
+    }
+
+    async function attemptLogin() {
+      const slug = $('#slug').value.trim();
+      const submitter_email = $('#submitter_email').value.trim();
+      if (!slug) { setLoginStatus('error', 'Pick your club first.'); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(submitter_email)) {
+        setLoginStatus('error', 'Enter a valid email address.');
+        return;
+      }
+      $('#login-btn').disabled = true;
+      setLoginStatus('success', 'Checking…');
+      try {
+        const res = await ClubsAPI.leaderVerify({ slug, submitter_email });
+        setLoginStatus('success', '');
+        await loadCurrentValues(slug);
+        revealEditSection(res.name);
+      } catch (err) {
+        setLoginStatus('error', err.message);
+      } finally {
+        $('#login-btn').disabled = false;
+      }
+    }
+    $('#login-btn').addEventListener('click', attemptLogin);
+    // Changing club or email after login drops back to the login step.
+    $('#slug').addEventListener('change', collapseToLogin);
+    $('#submitter_email').addEventListener('change', collapseToLogin);
+    $('#switch-club').addEventListener('click', () => {
+      collapseToLogin();
+      setLoginStatus('success', '');
+    });
 
     // Format-validate the email when the leader leaves the field. This is a
     // syntax check only — we deliberately do NOT check it against our records
