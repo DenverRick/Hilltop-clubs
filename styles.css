@@ -781,6 +781,20 @@ form.leader-form .checkbox-row strong { display: block; font-weight: 600; margin
 .draft-output .draft-body { min-height: 12rem; resize: vertical; }
 .draft-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.4rem; }
 
+/* Cancel row at the top of the leader form — right-aligned so it doesn't
+   compete with the Club picker below it. */
+form.leader-form .form-cancel-row {
+  display: flex;
+  justify-content: flex-end;
+}
+/* Bottom action row — Save + Cancel side by side. */
+form.leader-form .form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
 footer.site-footer {
   text-align: center;
   padding: 2rem 1rem;

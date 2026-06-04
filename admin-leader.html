@@ -26,17 +26,22 @@
     </p>
 
     <form class="leader-form" id="leader-form">
+      <div class="form-cancel-row">
+        <button class="btn btn-secondary" id="cancel-top" type="button">Cancel</button>
+      </div>
+
       <label>Club
         <select id="slug" required>
           <option value="">Loading…</option>
         </select>
       </label>
 
-      <label>Your email (must match our records)
+      <label>Club Leader's email (must match our records)
         <input id="submitter_email" type="email" required autocomplete="email" />
+        <span id="email-hint" class="field-hint" hidden></span>
       </label>
 
-      <label>Short blurb (one sentence for the card view)
+      <label>Short blurb (one sentence for the club view)
         <input id="Short Blurb" type="text" maxlength="160" />
       </label>
 
@@ -139,7 +144,10 @@
         <input id="TeamReach" type="text" placeholder="e.g. HSG2022" />
       </label>
 
-      <button class="btn btn-primary" type="submit">Save changes</button>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Save changes</button>
+        <button class="btn btn-secondary" id="cancel-bottom" type="button">Cancel</button>
+      </div>
       <div id="status" class="form-status" hidden></div>
     </form>
   </main>
@@ -219,6 +227,32 @@
       }
     }
     $('#slug').addEventListener('change', (ev) => loadCurrentValues(ev.target.value.trim()));
+
+    // Format-validate the email when the leader leaves the field. This is a
+    // syntax check only — we deliberately do NOT check it against our records
+    // here, since that would reveal whether a given address is the leader on
+    // file (the server returns a generic 403 on mismatch by design). The real
+    // match is verified server-side on save / upload / draft.
+    const emailInput = $('#submitter_email');
+    const emailHint = $('#email-hint');
+    emailInput.addEventListener('blur', () => {
+      const v = emailInput.value.trim();
+      if (!v) { emailHint.hidden = true; emailInput.removeAttribute('aria-invalid'); return; }
+      const looksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      if (looksValid) {
+        emailHint.hidden = true;
+        emailInput.removeAttribute('aria-invalid');
+      } else {
+        emailHint.hidden = false;
+        emailHint.textContent = '⚠️ That doesn\'t look like a valid email address — please check it.';
+        emailHint.style.color = 'var(--danger)';
+        emailInput.setAttribute('aria-invalid', 'true');
+      }
+    });
+    // Clear the warning as soon as they start correcting it.
+    emailInput.addEventListener('input', () => {
+      if (!emailHint.hidden) { emailHint.hidden = true; emailInput.removeAttribute('aria-invalid'); }
+    });
 
     function setStatus(kind, message) {
       const el = $('#status');
@@ -408,6 +442,11 @@
         setStatus('error', err.message);
       }
     });
+
+    // Cancel buttons (top + bottom) — discard edits and return to the landing page.
+    function onCancel() { window.location.href = '/'; }
+    $('#cancel-top').addEventListener('click', onCancel);
+    $('#cancel-bottom').addEventListener('click', onCancel);
 
     populateClubs();
   </script>
