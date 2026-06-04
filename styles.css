@@ -107,6 +107,63 @@ header.site-hero .stats {
 }
 header.site-hero .stats strong { color: white; font-size: 1.1rem; font-weight: 700; }
 
+/* ---- Club events: today widget + this-week section ---------------------- */
+.event-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.event-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  background: white;
+  border: 1px solid var(--gray-light);
+  border-left: 4px solid var(--primary-color);
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+}
+.event-row.cancelled {
+  border-left-color: var(--gray);
+  opacity: 0.7;
+}
+.event-row.cancelled .event-club { text-decoration: line-through; color: var(--gray); }
+.event-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.6rem; min-width: 0; }
+.event-day { font-weight: 700; color: var(--dark); }
+.event-club { font-weight: 600; color: var(--primary-color); text-decoration: none; }
+.event-club:hover { text-decoration: underline; }
+.event-meta { color: var(--gray); font-size: 0.92rem; }
+.event-note { color: var(--gray); font-style: italic; font-size: 0.9rem; flex-basis: 100%; }
+.event-cancelled-tag {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--danger); background: #fef2f2; padding: 0.1rem 0.45rem; border-radius: 999px;
+}
+.event-cal {
+  display: flex; align-items: center; gap: 0.55rem;
+  font-size: 0.88rem; white-space: nowrap;
+}
+.event-cal-label { color: var(--gray); font-weight: 600; }
+.event-cal a {
+  color: var(--primary-color); text-decoration: none;
+  padding: 0.2rem 0.5rem; border: 1px solid var(--gray-light); border-radius: 6px;
+}
+.event-cal a:hover { background: #eff6ff; text-decoration: none; }
+
+/* This-week collapsible */
+.week-toggle {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: none; border: none; cursor: pointer;
+  font-family: inherit; font-size: 1.2rem; font-weight: 600; color: var(--dark);
+  padding: 0;
+}
+.week-toggle-chevron { transition: transform 0.15s; color: var(--gray); }
+.week-toggle.open .week-toggle-chevron { transform: rotate(180deg); }
+.week-body { display: flex; flex-direction: column; gap: 1rem; margin-top: 0.75rem; }
+.week-day-group { display: flex; flex-direction: column; gap: 0.5rem; }
+.week-day-label {
+  font-size: 0.85rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: #1d4ed8;
+}
+
 /* Bottom search bar — quieter than the hero, but a clear convenience for users
    who scroll to the bottom and want to search without going back up. */
 .search-bottom {

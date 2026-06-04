@@ -23,6 +23,7 @@
     getAllClubs: () => getJSON('/api/get-clubs-by-category?all=1'),
     getClub: (slug) => getJSON(`/api/get-club?slug=${encodeURIComponent(slug)}`),
     getClubEvents: (slug) => getJSON(`/api/get-club-events?slug=${encodeURIComponent(slug)}`),
+    getWeekEvents: () => getJSON('/api/get-week-events'),
     getMprToday: () => getJSON('/api/get-mpr-today'),
     getClubMailto: (slug) => getJSON(`/api/get-club-mailto?slug=${encodeURIComponent(slug)}`),
     leaderVerify: (payload) => postJSON('/api/leader-verify', payload),
