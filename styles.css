@@ -17,6 +17,11 @@
 
 * { box-sizing: border-box; }
 
+/* The HTML `hidden` attribute must always win, even over class rules that set
+   display (e.g. .event-modal{display:flex}, .draft-output{display:flex}).
+   Without this, those elements render empty on page load. */
+[hidden] { display: none !important; }
+
 html { font-size: 18px; } /* Older audience — bigger base */
 
 body {
