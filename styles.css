@@ -93,19 +93,18 @@ header.site-hero .tagline {
 }
 @media (min-width: 768px) { header.site-hero .tagline { font-size: 1.25rem; } }
 
-header.site-hero .stats {
-  display: inline-flex;
-  gap: 1.25rem;
-  background: rgba(255,255,255,0.15);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  padding: 0.55rem 1.25rem;
-  border-radius: 999px;
-  font-size: 0.9rem;
-  color: white;
-  border: 1px solid rgba(255,255,255,0.25);
+/* Subtle club/category count, tucked into the bottom-right of the hero image. */
+header.site-hero .hero-stats {
+  position: absolute;
+  right: 0.9rem;
+  bottom: 0.7rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  letter-spacing: 0.01em;
+  pointer-events: none;
 }
-header.site-hero .stats strong { color: white; font-size: 1.1rem; font-weight: 700; }
+header.site-hero .hero-stats span { font-weight: 700; color: #fff; }
 
 /* ---- Club events: today widget + this-week section ---------------------- */
 .event-list { display: flex; flex-direction: column; gap: 0.5rem; }
