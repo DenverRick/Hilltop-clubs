@@ -115,7 +115,12 @@ export async function computeAllClubEvents({ baseId, token, tableClubs, windowSt
   if (!slotsRes.ok) return { ok: false, status: slotsRes.status, error: 'Airtable error fetching slots' };
   const slots = slotsRes.data.records || [];
 
-  // 3. Published weeks in window.
+  // 3. Published weeks only. A published week is the finalized view — all its
+  //    overrides (cancellations, room/time changes, one-offs) are baked in.
+  //    Unpublished/draft weeks are excluded so the directory never shows a
+  //    meeting that hasn't been reviewed (e.g. one that's actually cancelled
+  //    but not yet marked). The recurring schedule still comes from
+  //    MeetingSlots; publish status just gates which weeks are shown.
   const weekFloor = new Date(windowStart);
   weekFloor.setDate(weekFloor.getDate() - 7);
   const weeksRes = await airtableFetch(`${baseId}/${TABLE_WEEKS}`, {
@@ -133,7 +138,7 @@ export async function computeAllClubEvents({ baseId, token, tableClubs, windowSt
   });
   if (!publishedWeekStarts.size) return { ok: true, events: [] };
 
-  // 4. All overrides; keep only those tied to a published week in window.
+  // 4. Overrides — cancellations and per-week changes, applied where present.
   const overridesRes = await airtableFetch(`${baseId}/${TABLE_WEEK_OVERRIDES}`, { token });
   if (!overridesRes.ok) return { ok: false, status: overridesRes.status, error: 'Airtable error fetching overrides' };
   const overrideMap = new Map(); // slotId|weekStart → fields
@@ -167,7 +172,7 @@ export async function computeAllClubEvents({ baseId, token, tableClubs, windowSt
 
     for (const date of dates) {
       const ws = weekStartFor(date);
-      if (!publishedWeekStarts.has(ws)) continue;
+      if (!publishedWeekStarts.has(ws)) continue; // only finalized weeks
 
       const override = overrideMap.get(`${slot.id}|${ws}`);
       const cancelled = override?.['Override Type'] === 'Cancel';
