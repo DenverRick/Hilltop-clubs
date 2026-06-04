@@ -13,10 +13,20 @@
 // All date math is calendar-day; no timezone conversion (slot dates are
 // floating local dates from the resident's perspective).
 
+// Accepts both full ("Thursday") and abbreviated ("Thu") day names — the
+// Calendar app's MeetingSlots.Day singleSelect uses the 3-letter form.
 const DAY_INDEX = {
   Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
   Thursday: 4, Friday: 5, Saturday: 6,
+  Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
 };
+
+// Airtable singleSelect fields come back as { id, name, color } objects, not
+// plain strings. Coerce either form to the string name.
+function selName(v) {
+  if (v && typeof v === 'object') return v.name || '';
+  return v || '';
+}
 
 // Parse YYYY-MM-DD to a Date in local time at midnight.
 function parseDate(s) {
@@ -81,10 +91,10 @@ function nextWeekday(start, dayIndex) {
  * @returns {Date[]} ascending list of dates
  */
 export function expandRecurrence(slot, windowStart, windowEnd) {
-  const dayIndex = DAY_INDEX[slot.day];
+  const dayIndex = DAY_INDEX[selName(slot.day)];
   if (dayIndex === undefined) return [];
 
-  const recurrence = (slot.recurrence || '').trim();
+  const recurrence = selName(slot.recurrence).trim();
   const out = [];
 
   if (recurrence === 'Weekly') {
