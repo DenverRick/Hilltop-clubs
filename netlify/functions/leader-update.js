@@ -17,6 +17,7 @@ const ALLOWED_FIELDS = new Set([
   'YouTube URLs',
   'External Website',
   'TeamReach',
+  'Hide Events',
 ]);
 
 const normalize = (s) => String(s || '').trim().toLowerCase();

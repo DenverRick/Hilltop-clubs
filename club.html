@@ -82,10 +82,15 @@
         return;
       }
       try {
-        const [{ club }, { categories }] = await Promise.all([
+        // getClubEvents may fail silently (e.g. no MeetingSlots set up for
+        // this club yet) — fall back to empty list rather than failing the
+        // whole page. The section just hides itself.
+        const [{ club }, { categories }, eventsRes] = await Promise.all([
           ClubsAPI.getClub(slug),
           ClubsAPI.getCategories(),
+          ClubsAPI.getClubEvents(slug).catch(() => ({ events: [] })),
         ]);
+        const upcomingEvents = eventsRes?.events || [];
         const cat = categories.find((c) => c.name === club.category);
         document.title = `${club.name} — Hilltop Clubs`;
 
@@ -124,6 +129,21 @@
                 `).join('')}
               </div>` : ''}
 
+            ${upcomingEvents.length ? `
+              <div class="upcoming-meetings">
+                <div class="upcoming-label">📅 Upcoming meetings</div>
+                <ul class="upcoming-list">
+                  ${upcomingEvents.map((ev) => `
+                    <li>
+                      <span class="upcoming-date">${escape(ev.dayLabel)}</span>
+                      ${ev.startTime ? `<span class="upcoming-time">${escape(ev.startTime)}${ev.endTime ? ` – ${escape(ev.endTime)}` : ''}</span>` : ''}
+                      ${ev.location ? `<span class="upcoming-location">${escape(ev.location)}</span>` : ''}
+                      ${ev.note ? `<span class="upcoming-note">${escape(ev.note)}</span>` : ''}
+                    </li>
+                  `).join('')}
+                </ul>
+              </div>` : ''}
+
             ${club.description ? `<div class="club-description">${escape(club.description).replace(/\n/g, '<br>')}</div>` : ''}
             ${club.vibe ? `<div class="vibe">${escape(club.vibe)}</div>` : ''}
             ${club.whatToBring ? `<div class="what-to-bring"><div class="wtb-label">👋 First time? Bring this:</div><div class="wtb-text">${escape(club.whatToBring).replace(/\n/g, '<br>')}</div></div>` : ''}
@@ -131,6 +151,14 @@
             ${videos.length ? `
               <div class="video-grid ${videos.length > 1 ? 'has-multiple' : ''}">
                 ${videos.map((id) => `<iframe src="https://www.youtube.com/embed/${escape(id)}" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`).join('')}
+              </div>` : ''}
+
+            ${club.promoFlyer ? `
+              <div class="promo-flyer">
+                <div class="promo-flyer-label">📣 Latest from ${escape(club.name)}</div>
+                <a class="promo-flyer-link" href="${escape(club.promoFlyer)}" target="_blank" rel="noopener">
+                  <img class="promo-flyer-image" src="${escape(club.promoFlyerLarge || club.promoFlyer)}" alt="Promotional flyer for ${escape(club.name)}" />
+                </a>
               </div>` : ''}
 
             <div class="club-footer">

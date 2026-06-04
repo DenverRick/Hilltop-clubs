@@ -32,6 +32,10 @@ export const CACHE = {
   CATEGORIES: 'public, max-age=300, s-maxage=3600',
   // Club lists / detail. Up to ~5 min stale at edge after a leader edit.
   CLUBS:      'public, max-age=60, s-maxage=300',
+  // Upcoming-events lists. Slightly longer edge cache — schedules don't change
+  // minute-by-minute, and the recurrence expansion + override join is more
+  // expensive than a single-record fetch.
+  EVENTS:     'public, max-age=300, s-maxage=1800',
   // Privacy-sensitive: must always fetch fresh (Leader Email is the payload).
   // Caching this anywhere — browser, edge, intermediate — would risk leakage.
   NEVER:      'private, no-store, max-age=0',

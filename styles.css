@@ -445,6 +445,73 @@ h3 { font-size: 1.2rem; margin: 0 0 0.5rem; }
   color: var(--dark);
 }
 
+/* Upcoming meetings — a calm blue-tinted callout between the meeting strip
+   and the long description. Each row stacks naturally on narrow screens. */
+.upcoming-meetings {
+  background: #eff6ff;
+  border-left: 4px solid var(--primary-color);
+  padding: 0.85rem 1.15rem 1rem;
+  border-radius: 8px;
+  margin: 0 0 1.5rem;
+}
+.upcoming-meetings .upcoming-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #1d4ed8;
+  margin-bottom: 0.5rem;
+}
+.upcoming-meetings .upcoming-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.upcoming-meetings .upcoming-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.75rem;
+  font-size: 0.98rem;
+}
+.upcoming-meetings .upcoming-date { font-weight: 600; color: var(--dark); min-width: 6.5rem; }
+.upcoming-meetings .upcoming-time { color: #334155; }
+.upcoming-meetings .upcoming-location { color: var(--gray); font-size: 0.92rem; }
+.upcoming-meetings .upcoming-note { color: var(--gray); font-style: italic; font-size: 0.92rem; }
+
+/* Promo flyer — bordered card matching the warm "look at this" treatment
+   already used elsewhere. Tap to open full-size in a new tab. */
+.promo-flyer {
+  background: linear-gradient(180deg, #fffaf0 0%, #fff5e3 100%);
+  border: 1px solid rgba(217, 119, 6, 0.28);
+  padding: 1rem 1.15rem;
+  border-radius: 12px;
+  margin: 0 0 1.5rem;
+}
+.promo-flyer .promo-flyer-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #92400e;
+  margin-bottom: 0.7rem;
+}
+.promo-flyer .promo-flyer-link {
+  display: block;
+  border-radius: 8px;
+  overflow: hidden;
+  text-decoration: none;
+}
+.promo-flyer .promo-flyer-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: white;
+}
+
 .club-description {
   font-size: 1.05rem;
   line-height: 1.7;
@@ -648,6 +715,71 @@ form.leader-form input:focus, form.leader-form select:focus, form.leader-form te
 .form-status { padding: 0.75rem; border-radius: 8px; }
 .form-status.success { background: #ecfdf5; color: #065f46; }
 .form-status.error { background: #fef2f2; color: var(--danger); }
+
+/* Checkbox row — overrides the default leader-form label flex-direction so the
+   checkbox sits inline next to its text. */
+form.leader-form .checkbox-row {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.7rem;
+  font-weight: 500;
+  background: #fafafa;
+  border: 1px solid var(--gray-light);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+}
+form.leader-form .checkbox-row input[type="checkbox"] {
+  width: 1.2rem; height: 1.2rem; margin-top: 0.15rem;
+  flex: none;
+  padding: 0;
+}
+form.leader-form .checkbox-row strong { display: block; font-weight: 600; margin-bottom: 0.15rem; }
+
+/* AI draft email — purple accent to signal "AI feature", distinct from the
+   regular form actions. */
+.ai-draft-section {
+  background: #faf5ff;
+  border: 1px solid rgba(126, 34, 206, 0.22);
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.ai-draft-section #draft-email-btn {
+  background: #7c3aed;
+  color: white;
+  border: none;
+  align-self: flex-start;
+}
+.ai-draft-section #draft-email-btn:hover { background: #6d28d9; }
+.ai-draft-section #draft-email-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.draft-output {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.draft-output .draft-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6d28d9;
+  margin-top: 0.3rem;
+}
+.draft-output .draft-subject,
+.draft-output .draft-body {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 0.65rem;
+  border: 2px solid var(--gray-light);
+  border-radius: 8px;
+  background: white;
+  font-weight: normal;
+}
+.draft-output .draft-body { min-height: 12rem; resize: vertical; }
+.draft-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.4rem; }
 
 footer.site-footer {
   text-align: center;
