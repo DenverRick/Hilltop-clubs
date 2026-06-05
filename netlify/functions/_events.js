@@ -12,6 +12,18 @@ import { expandRecurrence, fmt } from './_recurrence.js';
 const TABLE_MEETING_SLOTS = 'tblO3Vg7yoxioywpN';
 const TABLE_WEEKS = 'tbl2lRvniORa1XTAz';
 const TABLE_WEEK_OVERRIDES = 'tblSE0mTSYTSQiHMe';
+// The MPR "Events" table (in the separate Clubhouse base) — the Calendar app's
+// materialized, published schedule: real dated rows with overrides applied,
+// one-off events included, cancellations already removed. The authoritative
+// source for "what's actually happening this week."
+const TABLE_MPR_EVENTS = 'tblNmydBs6ZHPxrN9';
+
+// Parse a YYYY-MM-DD string as a LOCAL date (avoids the UTC-midnight shift that
+// `new Date("2026-06-04")` would introduce, which can land on the wrong day).
+function parseLocalDate(s) {
+  const [y, m, d] = String(s).split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
 
 const WINDOW_DAYS = 28;
 const MAX_OCCURRENCES = 8;
@@ -72,11 +84,79 @@ function matchClubByName(eventName, clubIndex) {
 }
 
 /**
+ * Read club meetings from the MPR "Events" table (the Calendar app's published,
+ * materialized schedule) within a date window, name-matched to opted-in clubs.
+ *
+ * This is the source the landing-page Today/Tomorrow widget uses. It's more
+ * accurate than recomputing from MeetingSlots: it already reflects per-week
+ * overrides, one-off events, and cancellations exactly as published. Community
+ * events (Coffee & Chat, exercise classes) are dropped because they don't
+ * name-match any directory club. Clubs with Hide Events are excluded (they're
+ * not in the index).
+ *
+ * @param {object} args
+ * @param {string} args.baseId       Clubs base (for the club name index)
+ * @param {string} args.token
+ * @param {string} args.tableClubs
+ * @param {string} args.mprBaseId    Clubhouse base holding the Events table
+ * @param {Date} args.windowStart
+ * @param {Date} args.windowEnd
+ * @returns {Promise<{ ok: boolean, status?: number, error?: string, events?: Array }>}
+ */
+export async function computeWeekClubEventsFromMpr({ baseId, token, tableClubs, mprBaseId, windowStart, windowEnd }) {
+  // 1. Opted-in clubs → name index.
+  const clubsRes = await airtableFetch(`${baseId}/${tableClubs}`, {
+    token,
+    query: { filterByFormula: `AND({Active} = TRUE(), NOT({Hide Events}))` },
+  });
+  if (!clubsRes.ok) return { ok: false, status: clubsRes.status, error: 'Airtable error fetching clubs' };
+  const clubList = (clubsRes.data.records || []).map((c) => ({
+    name: c.fields['Name'] || '',
+    slug: c.fields['Slug'] || '',
+  }));
+  if (!clubList.length) return { ok: true, events: [] };
+  const clubIndex = buildClubIndex(clubList);
+
+  // 2. Published MPR events (Active=true). Small table (~one week) — fetch and
+  //    filter by date in JS to avoid date-formula edge cases.
+  const evRes = await airtableFetch(`${mprBaseId}/${TABLE_MPR_EVENTS}`, {
+    token,
+    query: { filterByFormula: `{Active} = TRUE()` },
+  });
+  if (!evRes.ok) return { ok: false, status: evRes.status, error: 'Airtable error fetching MPR events' };
+
+  const startStr = fmt(windowStart);
+  const endStr = fmt(windowEnd);
+  const out = [];
+  for (const r of evRes.data.records || []) {
+    const f = r.fields;
+    const date = f['Date'];
+    if (!date || date < startStr || date > endStr) continue;
+    const club = matchClubByName(f['Name'], clubIndex);
+    if (!club) continue; // community event — not a directory club
+    out.push({
+      date,
+      dayLabel: formatDayLabel(parseLocalDate(date)),
+      startTime: f['Start'] || '',
+      endTime: f['End'] || '',
+      location: f['Room'] || '',
+      note: '',
+      eventName: f['Name'] || club.name,
+      clubName: club.name,
+      clubSlug: club.slug,
+      cancelled: false,
+    });
+  }
+  out.sort((a, b) => (a.date !== b.date ? a.date.localeCompare(b.date) : a.startTime.localeCompare(b.startTime)));
+  return { ok: true, events: out };
+}
+
+/**
  * Compute club meetings across ALL opted-in clubs within a date window.
- * Used by get-week-events.js to power the landing-page "today" widget and
- * the inline week view. Only clubs that are Active AND not Hide Events are
- * included — community events (exercise, music, etc.) are never here because
- * we only walk MeetingSlots whose Club link points to a directory club.
+ * (MeetingSlots-recurrence path — still used by the per-club "Upcoming
+ * meetings" list on club pages, which projects further ahead than the MPR
+ * table holds. The Today/Tomorrow widget uses computeWeekClubEventsFromMpr.)
+ * Only clubs that are Active AND not Hide Events are included.
  *
  * @param {object} args
  * @param {string} args.baseId

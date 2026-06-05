@@ -1,15 +1,17 @@
-// Returns club meetings for a rolling window (today → today + 7 days) across
-// all opted-in clubs. Powers the landing-page "Clubs meeting today" widget
-// and the inline "This week's club events" section.
+// Returns club meetings for a rolling window (today → today + 7 days),
+// sourced from the Calendar app's published MPR "Events" table and name-matched
+// to opted-in directory clubs. Powers the landing-page Today/Tomorrow widget.
 //
-// Club events only — community events (exercise classes, music, etc.) never
-// appear here, because computeAllClubEvents only walks MeetingSlots whose
-// Club link points to an Active, non-hidden directory club.
+// We read the materialized Events table (not the MeetingSlots recurrence)
+// because it already reflects per-week overrides, one-off events, and
+// cancellations exactly as published. Community events never appear — they
+// don't name-match any directory club.
 
 import { preflight, json, env, CACHE } from './_airtable.js';
-import { computeAllClubEvents } from './_events.js';
+import { computeWeekClubEventsFromMpr } from './_events.js';
 
 const WINDOW_DAYS = 7;
+const MPR_BASE_ID = process.env.MPR_BASE_ID || 'appNJgCpn3NJCRC8U';
 
 export async function handler(event) {
   const pre = preflight(event);
@@ -24,10 +26,11 @@ export async function handler(event) {
   const windowEnd = new Date(today);
   windowEnd.setDate(windowEnd.getDate() + WINDOW_DAYS);
 
-  const result = await computeAllClubEvents({
+  const result = await computeWeekClubEventsFromMpr({
     baseId: e.baseId,
     token: e.token,
     tableClubs: e.tableClubs,
+    mprBaseId: MPR_BASE_ID,
     windowStart: today,
     windowEnd,
   });
