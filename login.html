@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+  <title>Hilltop Clubs — Resident Sign-in</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="gate-wrap">
+    <form class="login-card gate-card" id="gate-form">
+      <div class="login-card-title">Hilltop Clubs</div>
+      <p class="gate-intro">
+        This directory is for Hilltop residents. Please enter the community
+        password to continue.
+      </p>
+
+      <label>Community password
+        <div class="password-field">
+          <input id="password" type="text" autocomplete="current-password"
+                 autocapitalize="off" autocorrect="off" spellcheck="false" required />
+          <button type="button" id="toggle-visibility" class="visibility-toggle"
+                  aria-label="Hide password" aria-pressed="true">Hide</button>
+        </div>
+      </label>
+
+      <div class="login-actions">
+        <button class="btn btn-primary" id="enter-btn" type="submit">Enter</button>
+      </div>
+      <div id="gate-status" class="form-status" hidden></div>
+      <p class="gate-help">Don't have the password? Ask the clubhouse or your club leader.</p>
+    </form>
+  </main>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+
+    // Only follow a same-site absolute path after login — never an external or
+    // protocol-relative URL slipped in via ?next=.
+    function safeNext() {
+      const raw = new URLSearchParams(location.search).get('next') || '/';
+      if (!raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/login')) return '/';
+      return raw;
+    }
+
+    // Show/Hide toggle — password is visible by default (matches the leader page).
+    const pw = $('#password');
+    const toggle = $('#toggle-visibility');
+    toggle.addEventListener('click', () => {
+      const masked = pw.type === 'password';
+      pw.type = masked ? 'text' : 'password';
+      toggle.textContent = masked ? 'Hide' : 'Show';
+      toggle.setAttribute('aria-label', masked ? 'Hide password' : 'Show password');
+      toggle.setAttribute('aria-pressed', String(masked));
+      pw.focus();
+    });
+
+    function setStatus(kind, message) {
+      const el = $('#gate-status');
+      if (!message) { el.hidden = true; return; }
+      el.hidden = false;
+      el.className = `form-status ${kind}`;
+      el.textContent = message;
+    }
+
+    $('#gate-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = pw.value;
+      if (!password) { setStatus('error', 'Please enter the password.'); return; }
+      $('#enter-btn').disabled = true;
+      setStatus('success', 'Checking…');
+      try {
+        const res = await fetch('/api/resident-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Sign-in failed.');
+        // Cookie is set; go where they were headed.
+        location.assign(safeNext());
+      } catch (err) {
+        setStatus('error', err.message);
+        $('#enter-btn').disabled = false;
+        pw.focus();
+        pw.select();
+      }
+    });
+
+    pw.focus();
+  </script>
+</body>
+</html>

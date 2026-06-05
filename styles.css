@@ -952,6 +952,20 @@ form.leader-form .form-actions {
   align-items: center;
 }
 
+/* Resident gate (login.html) — centered card on an otherwise empty page. */
+.gate-wrap {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+.gate-card { width: 100%; max-width: 26rem; }
+.gate-card .gate-intro { margin: 0; color: var(--gray); }
+.gate-card .login-actions { margin-top: 0.25rem; }
+.gate-card .btn-primary { width: 100%; justify-content: center; }
+.gate-card .gate-help { margin: 0; font-size: 0.85rem; color: var(--gray); }
+
 /* Edit-section banner — confirms which club is being edited and offers a way
    back to the login step. */
 .edit-banner {

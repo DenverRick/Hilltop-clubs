@@ -17,6 +17,7 @@ A small searchable directory of the ~40 resident clubs at Hilltop at Inspiration
 3. **Leader updates are gated by email-match.** `leader-update.js` compares the submitter's email to the row's `Leader Email` server-side. The function only patches an allowlisted set of fields. On mismatch it returns a generic 403 — don't leak whether the club or the email was the wrong part.
 4. **Vanilla JS only.** No React, no build step. Pages are self-contained HTML files that load `/styles.css` and `/api-client.js`.
 5. **Dates: always compute "today" in `America/Denver`, never server-local.** Netlify Functions run on **UTC**, so `new Date()` in the evening Mountain time has already rolled to tomorrow — which silently shows the wrong day's events. Any function that needs the current date (Today/Tomorrow widget, upcoming-meetings windows, etc.) must derive it via `Intl.DateTimeFormat('en-CA', { timeZone: 'America/Denver' })` (gives `YYYY-MM-DD`), not from the server clock. Reuse `todayDenver()` in `_events.js`.
+6. **Whole site is gated behind a shared resident password.** The edge function `netlify/edge-functions/gate.js` (`path = "/*"`) runs before every request and 302-redirects unauthenticated visitors to `/login`. It gates **both** the HTML pages **and** `/api/*` content functions — gating HTML alone would leave meeting times/locations readable via a direct API call. `resident-login.js` checks `RESIDENT_PASSWORD` and sets an HMAC cookie (`hc_resident`, 90-day) that the gate recomputes and verifies. Allow-listed (no auth): `/login`, `/api/resident-login`, `/robots.txt`, and static assets. This is separate from the leader email-match auth (invariant #3), which still gates writes. If you add a route that must be public, add it to `isPublicPath()` in `gate.js`.
 
 ## Layout
 
@@ -48,6 +49,7 @@ netlify/functions/
 - `AIRTABLE_TABLE_CATEGORIES` — `tblXXXX…`
 - `MPR_BASE_ID` — optional override for the Clubhouse base read by `get-mpr-today.js` (defaults to `appNJgCpn3NJCRC8U`)
 - `ANTHROPIC_API_KEY` — Anthropic Messages API key used by `leader-draft-email.js` to draft promo emails from each club's info + an optional leader-supplied "what's this about" note. Uses Sonnet (`claude-sonnet-4-5`) for less-generic copy; low-volume leader action so cost is negligible. If unset, the AI-draft button returns a 500 with a clear error.
+- `RESIDENT_PASSWORD` — shared community password for the whole-site resident gate (invariant #6). Read by `resident-login.js` (Node) and `gate.js` (edge). Same string the sibling calendar app uses — the two are NOT federated, they just check the same value. Must be available to **both** Functions and Edge Functions (default scope covers both). If unset, the gate fails closed (everyone is bounced to `/login` and login returns 500).
 
 ## Airtable schema
 

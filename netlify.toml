@@ -7,7 +7,15 @@
 [functions]
   node_bundler = "esbuild"
 
+# Resident gate runs before every request; it's registered in-source via the
+# `export const config = { path: "/*" }` in netlify/edge-functions/gate.js.
+
 # Pretty URLs
+[[redirects]]
+  from = "/login"
+  to = "/login.html"
+  status = 200
+
 [[redirects]]
   from = "/category/:slug"
   to = "/category.html?slug=:slug"
