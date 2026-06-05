@@ -37,9 +37,11 @@
         <div class="login-card-title">Club leader sign-in</div>
 
         <label>Club
-          <select id="slug" required>
-            <option value="">Loading…</option>
-          </select>
+          <input id="club-search" list="club-list" placeholder="Start typing your club name…"
+                 autocomplete="off" />
+          <datalist id="club-list"></datalist>
+          <input type="hidden" id="slug" />
+          <span class="field-hint">Type a few letters of your club's name, then pick it from the list.</span>
         </label>
 
         <label>Club Leader's email (must match our records)
@@ -203,22 +205,37 @@
       'YouTube URLs', 'External Website', 'TeamReach',
     ];
 
+    // Club picker is a type-to-filter combobox: the visible text input feeds a
+    // <datalist> so leaders can type a few letters and pick their club, instead
+    // of single-letter jumps in a native <select>. The typed name is resolved
+    // to its slug into the hidden #slug field, which the rest of the page reads.
+    const nameToSlug = new Map();
+    const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
     async function populateClubs() {
-      const sel = $('#slug');
+      const search = $('#club-search');
+      const list = $('#club-list');
       try {
         const { clubs } = await ClubsAPI.getAllClubs();
-        if (!clubs.length) {
-          sel.innerHTML = '<option value="">No clubs yet</option>';
-          return;
-        }
-        sel.innerHTML = '<option value="">— Pick your club —</option>' +
-          clubs
-            .slice()
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((c) => `<option value="${c.slug}">${c.name}</option>`).join('');
+        if (!clubs.length) { search.placeholder = 'No clubs yet'; search.disabled = true; return; }
+        const sorted = clubs.slice().sort((a, b) => a.name.localeCompare(b.name));
+        nameToSlug.clear();
+        for (const c of sorted) nameToSlug.set(c.name.toLowerCase(), c.slug);
+        list.innerHTML = sorted.map((c) => `<option value="${escAttr(c.name)}"></option>`).join('');
       } catch (err) {
-        sel.innerHTML = `<option value="">Error: ${err.message}</option>`;
+        search.placeholder = `Error: ${err.message}`;
       }
+    }
+    // Map what's typed to a slug. Exact name wins; otherwise a unique prefix
+    // match (so two or three letters can land them on their club).
+    function resolveSlug() {
+      const typed = $('#club-search').value.trim().toLowerCase();
+      let slug = nameToSlug.get(typed) || '';
+      if (!slug && typed) {
+        const matches = [...nameToSlug.entries()].filter(([name]) => name.startsWith(typed));
+        if (matches.length === 1) slug = matches[0][1];
+      }
+      $('#slug').value = slug;
+      return slug;
     }
 
     // Pre-populate the form with the club's current public values so leaders
@@ -291,9 +308,9 @@
     }
 
     async function attemptLogin() {
-      const slug = $('#slug').value.trim();
+      const slug = resolveSlug();
       const submitter_email = $('#submitter_email').value.trim();
-      if (!slug) { setLoginStatus('error', 'Pick your club first.'); return; }
+      if (!slug) { setLoginStatus('error', 'Pick your club from the list first.'); return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(submitter_email)) {
         setLoginStatus('error', 'Enter a valid email address.');
         return;
@@ -313,9 +330,11 @@
     }
     $('#login-btn').addEventListener('click', attemptLogin);
     // Changing club or email after login drops back to the login step.
-    $('#slug').addEventListener('change', collapseToLogin);
+    $('#club-search').addEventListener('input', () => { resolveSlug(); collapseToLogin(); });
     $('#submitter_email').addEventListener('change', collapseToLogin);
     $('#switch-club').addEventListener('click', () => {
+      $('#club-search').value = '';
+      $('#slug').value = '';
       collapseToLogin();
       setLoginStatus('success', '');
     });
