@@ -796,6 +796,22 @@ form.leader-form input, form.leader-form select, form.leader-form textarea {
   font-weight: normal;
 }
 form.leader-form textarea { min-height: 6rem; resize: vertical; }
+.password-field { position: relative; display: flex; align-items: center; }
+.password-field input { flex: 1; padding-right: 4.75rem; }
+.visibility-toggle {
+  position: absolute;
+  right: 0.4rem;
+  border: none;
+  background: transparent;
+  color: var(--primary-color);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.4rem 0.5rem;
+  cursor: pointer;
+}
+.visibility-toggle:hover { text-decoration: underline; }
+.visibility-toggle:focus-visible { outline: 2px solid var(--primary-color); border-radius: 6px; }
 form.leader-form input:focus, form.leader-form select:focus, form.leader-form textarea:focus {
   outline: none;
   border-color: var(--primary-color);

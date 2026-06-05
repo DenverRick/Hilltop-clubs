@@ -37,7 +37,11 @@
         </label>
 
         <label>Club Leader's email (must match our records)
-          <input id="submitter_email" type="email" required autocomplete="email" />
+          <div class="password-field">
+            <input id="submitter_email" type="password" required autocomplete="email" inputmode="email" />
+            <button type="button" id="toggle-email-visibility" class="visibility-toggle"
+                    aria-label="Show email" aria-pressed="false">Show</button>
+          </div>
           <span id="email-hint" class="field-hint" hidden></span>
         </label>
 
@@ -317,6 +321,17 @@
     // Clear the warning as soon as they start correcting it.
     emailInput.addEventListener('input', () => {
       if (!emailHint.hidden) { emailHint.hidden = true; emailInput.removeAttribute('aria-invalid'); }
+    });
+
+    // Show/Hide toggle for the masked email field.
+    const toggleVis = $('#toggle-email-visibility');
+    toggleVis.addEventListener('click', () => {
+      const masked = emailInput.type === 'password';
+      emailInput.type = masked ? 'text' : 'password';
+      toggleVis.textContent = masked ? 'Hide' : 'Show';
+      toggleVis.setAttribute('aria-label', masked ? 'Hide email' : 'Show email');
+      toggleVis.setAttribute('aria-pressed', String(masked));
+      emailInput.focus();
     });
 
     function setStatus(kind, message) {
