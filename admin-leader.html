@@ -44,9 +44,9 @@
 
         <label>Club Leader's email (must match our records)
           <div class="password-field">
-            <input id="submitter_email" type="password" required autocomplete="email" inputmode="email" />
+            <input id="submitter_email" type="email" required autocomplete="email" inputmode="email" />
             <button type="button" id="toggle-email-visibility" class="visibility-toggle"
-                    aria-label="Show email" aria-pressed="false">Show</button>
+                    aria-label="Hide email" aria-pressed="true">Hide</button>
           </div>
           <span id="email-hint" class="field-hint" hidden></span>
         </label>
@@ -367,7 +367,7 @@
     const toggleVis = $('#toggle-email-visibility');
     toggleVis.addEventListener('click', () => {
       const masked = emailInput.type === 'password';
-      emailInput.type = masked ? 'text' : 'password';
+      emailInput.type = masked ? 'email' : 'password';
       toggleVis.textContent = masked ? 'Hide' : 'Show';
       toggleVis.setAttribute('aria-label', masked ? 'Hide email' : 'Show email');
       toggleVis.setAttribute('aria-pressed', String(masked));

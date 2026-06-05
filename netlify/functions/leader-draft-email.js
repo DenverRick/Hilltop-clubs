@@ -18,7 +18,7 @@ const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function buildPrompt({
   clubName, blurb, description, leaderName, nextEvent, hasFlyer,
-  context, vibe, whatToBring, tags, teamReach, website, memberCount,
+  context, vibe, whatToBring, tags, teamReach, website, memberCount, clubUrl,
 }) {
   const eventLine = nextEvent
     ? `Next upcoming meeting: ${nextEvent.dayLabel}${nextEvent.startTime ? ` at ${nextEvent.startTime}` : ''}${nextEvent.location ? ` in ${nextEvent.location}` : ''}${nextEvent.note ? ` — ${nextEvent.note}` : ''}`
@@ -44,12 +44,14 @@ function buildPrompt({
     tags ? `- Tags: ${tags}` : '',
     memberCount ? `- Member count: ${memberCount}` : '',
     teamReach ? `- Members coordinate via the TeamReach app, group code ${teamReach}.` : '',
-    website ? `- Club website: ${website}` : '',
+    website ? `- Club's own external website: ${website}` : '',
+    clubUrl ? `- The club's page in the Hilltop directory (full details, schedule, flyer): ${clubUrl}` : '',
     eventLine,
-    hasFlyer ? `- A promo flyer is on the club page at hilltopclubs.org; you may point readers there for more.` : '',
+    hasFlyer ? `- A promo flyer is on the club's directory page; you may point readers there for more.` : '',
     ``,
     `Rules:`,
     `- Lead with the specific hook above, not a generic greeting. If the leader gave a topic/speaker, that IS the email.`,
+    `- Whenever you describe the club or invite readers to learn more, include the club's directory page link above so they can see the full page.`,
     `- Use concrete, club-specific detail. Avoid filler like "we're excited to invite you" or "don't miss out".`,
     `- Only state facts given above — do not invent speakers, topics, dates, or numbers.`,
     `- Sign off from "${leaderName || 'the leadership team'}".`,
@@ -135,6 +137,7 @@ export async function handler(event) {
     teamReach: fields['TeamReach'] || '',
     website: fields['External Website'] || '',
     memberCount: fields['Member Count'] || '',
+    clubUrl: `https://hilltopclubs.org/club/${slug}`,
   });
 
   // 4. Call Anthropic.
