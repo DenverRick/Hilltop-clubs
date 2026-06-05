@@ -30,12 +30,12 @@
       <div id="events-grid" class="events-grid"></div>
     </section>
 
-    <section id="featured-view" hidden>
+    <section id="new-info-view" hidden>
       <div class="section-head">
-        <h3>Featured this week</h3>
-        <span class="hint">A new rotation every week</span>
+        <h3>✨ New Information</h3>
+        <span class="hint">Clubs that recently updated their page</span>
       </div>
-      <div class="grid grid-3" id="featured-grid"></div>
+      <div class="grid grid-3" id="new-info-grid"></div>
     </section>
 
     <section id="categories-view">
@@ -87,18 +87,17 @@
       if (wasRecentlyUpdated(club.lastUpdated)) return '<span class="updated-chip">Updated</span>';
       return '';
     }
-    // Deterministic weekly rotation. Sort by id for a stable order across visitors,
-    // then walk forward by `count` slots each week so every active club gets a turn.
-    function pickFeatured(clubs, count = 3) {
-      if (!clubs.length) return [];
-      const ordered = clubs.slice().sort((a, b) => (a.id || a.slug || '').localeCompare(b.id || b.slug || ''));
-      const week = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
-      const start = (week * count) % ordered.length;
-      const out = [];
-      for (let i = 0; i < count && i < ordered.length; i++) {
-        out.push(ordered[(start + i) % ordered.length]);
-      }
-      return out;
+    // "New Information" — surface the most-recently-updated clubs as an
+    // incentive for leaders to keep their pages current. Sort by Last Updated
+    // (desc) within a 30-day window so the section reflects genuine recent
+    // activity and self-empties if nothing's been touched in a month.
+    const NEW_INFO_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+    function pickNewInfo(clubs, count = 3) {
+      const now = Date.now();
+      return clubs
+        .filter((c) => c.lastUpdated && (now - Date.parse(c.lastUpdated)) < NEW_INFO_WINDOW_MS)
+        .sort((a, b) => Date.parse(b.lastUpdated) - Date.parse(a.lastUpdated))
+        .slice(0, count);
     }
     // Card meeting line: prefer the free-text Meeting Schedule override
     // (e.g. "3rd Wednesday of each month") over structured day, then append
@@ -170,16 +169,16 @@
           `;
         }).join('');
 
-        renderFeatured(clubs);
+        renderNewInfo(clubs);
       } catch (err) {
         catGrid.innerHTML = `<div class="error">${escape(err.message)}</div>`;
       }
     }
 
-    function renderFeatured(clubs) {
-      const ranked = pickFeatured(clubs, 3);
-      if (ranked.length < 2) return;
-      const grid = $('#featured-grid');
+    function renderNewInfo(clubs) {
+      const ranked = pickNewInfo(clubs, 3);
+      if (!ranked.length) return; // nothing recent → stay hidden
+      const grid = $('#new-info-grid');
       grid.innerHTML = ranked.map((c) => `
         <a class="card featured-card" href="/club/${encodeURIComponent(c.slug)}">
           ${c.thumbnail ? `<img class="thumbnail" src="${escape(c.thumbnail)}" alt="" />` : ''}
@@ -189,7 +188,7 @@
           ${meetingLineHTML(c)}
         </a>
       `).join('');
-      $('#featured-view').hidden = false;
+      $('#new-info-view').hidden = false;
     }
 
     // ---- Club events: today widget + this-week section -------------------
@@ -364,7 +363,7 @@
 
     async function runSearch(q) {
       const view = $('#categories-view');
-      const featured = $('#featured-view');
+      const newInfo = $('#new-info-view');
       const eventsView = $('#events-view');
       const results = $('#search-results');
       const grid = $('#search-grid');
@@ -372,12 +371,12 @@
         results.hidden = true;
         view.hidden = false;
         // Restore rows only if they had content rendered.
-        featured.hidden = !featured.querySelector('.card');
+        newInfo.hidden = !newInfo.querySelector('.card');
         eventsView.hidden = !eventsView.querySelector('.event-card, .events-empty');
         return;
       }
       view.hidden = true;
-      featured.hidden = true;
+      newInfo.hidden = true;
       eventsView.hidden = true;
       results.hidden = false;
       grid.innerHTML = '<div class="loading">Searching…</div>';
