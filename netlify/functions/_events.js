@@ -25,6 +25,18 @@ function parseLocalDate(s) {
   return new Date(y, m - 1, d);
 }
 
+// "Today" in Hilltop's timezone. Netlify Functions run on UTC, so the server
+// clock rolls to tomorrow in the evening Mountain time — always derive the
+// current date here, never from server-local `new Date()`. See CLAUDE.md.
+const TIME_ZONE = 'America/Denver';
+export function todayDenver() {
+  const ymd = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+  const [y, m, d] = ymd.split('-').map(Number);
+  return { ymd, date: new Date(y, m - 1, d) };
+}
+
 const WINDOW_DAYS = 28;
 const MAX_OCCURRENCES = 8;
 
@@ -296,8 +308,8 @@ export async function computeUpcomingEvents({ baseId, token, tableClubs, clubRec
   const slug = clubRecord.fields['Slug'];
   if (!slug) return { ok: true, events: [] };
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Mountain-time "today", not server/UTC (see CLAUDE.md date invariant).
+  const today = todayDenver().date;
   const windowEnd = new Date(today);
   windowEnd.setDate(windowEnd.getDate() + WINDOW_DAYS);
 

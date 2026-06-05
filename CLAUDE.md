@@ -16,6 +16,7 @@ A small searchable directory of the ~40 resident clubs at Hilltop at Inspiration
 2. **All Airtable access via Netlify functions.** The Airtable token never appears in HTML or in `api-client.js`.
 3. **Leader updates are gated by email-match.** `leader-update.js` compares the submitter's email to the row's `Leader Email` server-side. The function only patches an allowlisted set of fields. On mismatch it returns a generic 403 — don't leak whether the club or the email was the wrong part.
 4. **Vanilla JS only.** No React, no build step. Pages are self-contained HTML files that load `/styles.css` and `/api-client.js`.
+5. **Dates: always compute "today" in `America/Denver`, never server-local.** Netlify Functions run on **UTC**, so `new Date()` in the evening Mountain time has already rolled to tomorrow — which silently shows the wrong day's events. Any function that needs the current date (Today/Tomorrow widget, upcoming-meetings windows, etc.) must derive it via `Intl.DateTimeFormat('en-CA', { timeZone: 'America/Denver' })` (gives `YYYY-MM-DD`), not from the server clock. Reuse `todayDenver()` in `_events.js`.
 
 ## Layout
 

@@ -8,21 +8,10 @@
 // don't name-match any directory club.
 
 import { preflight, json, env, CACHE } from './_airtable.js';
-import { computeWeekClubEventsFromMpr } from './_events.js';
+import { computeWeekClubEventsFromMpr, todayDenver } from './_events.js';
 
 const WINDOW_DAYS = 7;
 const MPR_BASE_ID = process.env.MPR_BASE_ID || 'appNJgCpn3NJCRC8U';
-const TIME_ZONE = 'America/Denver';
-
-// "Today" must be the Hilltop (Mountain) calendar date, not the server's UTC
-// date. Netlify runs on UTC, so in the evening Mountain time the server would
-// otherwise roll to tomorrow and show the wrong day's events.
-function denverYMD() {
-  // en-CA formats as YYYY-MM-DD.
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit',
-  }).format(new Date());
-}
 
 export async function handler(event) {
   const pre = preflight(event);
@@ -32,10 +21,10 @@ export async function handler(event) {
   const e = env();
   if (e.error) return e.error;
 
-  const todayStr = denverYMD();           // e.g. "2026-06-04" (Mountain)
-  const [y, m, d] = todayStr.split('-').map(Number);
-  const windowStart = new Date(y, m - 1, d);          // local midnight, Denver date
-  const windowEnd = new Date(y, m - 1, d + WINDOW_DAYS);
+  // Mountain-time "today", not server/UTC (see CLAUDE.md date invariant).
+  const { ymd: todayStr, date: windowStart } = todayDenver();
+  const windowEnd = new Date(windowStart);
+  windowEnd.setDate(windowStart.getDate() + WINDOW_DAYS);
 
   const result = await computeWeekClubEventsFromMpr({
     baseId: e.baseId,
