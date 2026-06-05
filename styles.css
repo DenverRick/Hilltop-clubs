@@ -812,6 +812,18 @@ form.leader-form textarea { min-height: 6rem; resize: vertical; }
 }
 .visibility-toggle:hover { text-decoration: underline; }
 .visibility-toggle:focus-visible { outline: 2px solid var(--primary-color); border-radius: 6px; }
+.current-media { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.15rem; }
+.current-media-label { font-size: 0.85rem; color: var(--gray); font-weight: 600; }
+.current-media img {
+  max-width: 180px;
+  max-height: 140px;
+  width: auto;
+  height: auto;
+  border: 2px solid var(--gray-light);
+  border-radius: 8px;
+  object-fit: contain;
+  background: #f8fafc;
+}
 form.leader-form input:focus, form.leader-form select:focus, form.leader-form textarea:focus {
   outline: none;
   border-color: var(--primary-color);

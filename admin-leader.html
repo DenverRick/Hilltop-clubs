@@ -115,12 +115,20 @@
       </label>
 
       <label>Thumbnail image (replaces your current banner — JPEG, PNG, or WebP, max 5 MB)
+        <div id="thumbnail-preview" class="current-media" hidden>
+          <span class="current-media-label">Current banner:</span>
+          <img id="thumbnail-preview-img" alt="Current banner" />
+        </div>
         <input id="thumbnail-file" type="file" accept="image/jpeg,image/png,image/webp" />
         <span class="field-hint"><strong>Photo policy:</strong> please don't upload images that show identifiable club members. We don't blur or anonymize uploaded photos — if a photo shows people, we'll ask you for a different one. Best options: a wide shot with no faces, an object/scene photo (equipment, location), or reply to Rick to have an AI banner generated for your review.</span>
         <div id="thumbnail-status" class="form-status" hidden></div>
       </label>
 
       <label>Promo flyer (the same kind of one-pager you'd send to the newsletter — JPEG, PNG, or WebP, max 5 MB)
+        <div id="flyer-preview" class="current-media" hidden>
+          <span class="current-media-label">Current flyer:</span>
+          <img id="flyer-preview-img" alt="Current flyer" />
+        </div>
         <input id="flyer-file" type="file" accept="image/jpeg,image/png,image/webp" />
         <span class="field-hint">Shown on your club's public page as a "📣 Latest from [your club]" callout. Replaces whatever's there now whenever you upload a new one.</span>
         <div id="flyer-status" class="form-status" hidden></div>
@@ -215,6 +223,8 @@
         'External Website', 'TeamReach'];
       for (const id of ids) document.getElementById(id).value = '';
       document.getElementById('Hide Events').checked = false;
+      setMediaPreview('thumbnail', '', 'Current banner:');
+      setMediaPreview('flyer', '', 'Current flyer:');
     }
     async function loadCurrentValues(slug) {
       if (!slug) { clearFormFields(); return; }
@@ -240,6 +250,8 @@
         document.getElementById('External Website').value = website;
         document.getElementById('TeamReach').value = club.teamReach || '';
         document.getElementById('Hide Events').checked = !!club.hideEvents;
+        setMediaPreview('thumbnail', club.thumbnail, 'Current banner:');
+        setMediaPreview('flyer', club.promoFlyer, 'Current flyer:');
         $('#status').hidden = true;
       } catch (err) {
         setStatus('error', `Couldn't load current values: ${err.message}`);
@@ -296,6 +308,23 @@
       collapseToLogin();
       setLoginStatus('success', '');
     });
+
+    // Current-image previews for the banner + flyer uploads. Populated from the
+    // club's saved attachments on login, and swapped to an instant local preview
+    // the moment a leader picks a new file (before the upload round-trip).
+    function setMediaPreview(which, url, label) {
+      const wrap = document.getElementById(`${which}-preview`);
+      const img = document.getElementById(`${which}-preview-img`);
+      wrap.querySelector('.current-media-label').textContent = label;
+      if (url) { img.src = url; wrap.hidden = false; }
+      else { img.removeAttribute('src'); wrap.hidden = true; }
+    }
+    function showLocalPreview(which, file) {
+      if (!file) return;
+      setMediaPreview(which, URL.createObjectURL(file), 'New (uploading…):');
+    }
+    $('#thumbnail-file').addEventListener('change', (e) => showLocalPreview('thumbnail', e.target.files[0]));
+    $('#flyer-file').addEventListener('change', (e) => showLocalPreview('flyer', e.target.files[0]));
 
     // Format-validate the email when the leader leaves the field. This is a
     // syntax check only — we deliberately do NOT check it against our records
