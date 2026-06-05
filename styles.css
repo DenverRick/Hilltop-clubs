@@ -878,6 +878,8 @@ form.leader-form .checkbox-row strong { display: block; font-weight: 600; margin
   flex-direction: column;
   gap: 0.7rem;
 }
+.ai-draft-section .draft-context-label { gap: 0.35rem; }
+.ai-draft-section .optional-tag { font-weight: 400; font-size: 0.85rem; color: var(--gray); }
 .ai-draft-section #draft-email-btn {
   background: #7c3aed;
   color: white;

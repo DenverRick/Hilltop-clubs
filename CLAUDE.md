@@ -47,7 +47,7 @@ netlify/functions/
 - `AIRTABLE_TABLE_CLUBS` — `tblXXXX…`
 - `AIRTABLE_TABLE_CATEGORIES` — `tblXXXX…`
 - `MPR_BASE_ID` — optional override for the Clubhouse base read by `get-mpr-today.js` (defaults to `appNJgCpn3NJCRC8U`)
-- `ANTHROPIC_API_KEY` — Anthropic Messages API key used by `leader-draft-email.js` to draft promo emails from each club's info. Cheap (Haiku model). If unset, the AI-draft button returns a 500 with a clear error.
+- `ANTHROPIC_API_KEY` — Anthropic Messages API key used by `leader-draft-email.js` to draft promo emails from each club's info + an optional leader-supplied "what's this about" note. Uses Sonnet (`claude-sonnet-4-5`) for less-generic copy; low-volume leader action so cost is negligible. If unset, the AI-draft button returns a 500 with a clear error.
 
 ## Airtable schema
 

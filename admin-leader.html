@@ -143,6 +143,10 @@
       </label>
 
       <div class="ai-draft-section">
+        <label class="draft-context-label">What's this email about? <span class="optional-tag">(optional, but makes it much better)</span>
+          <textarea id="draft-context" rows="3" placeholder="e.g. This month Dr. Lee speaks on AI in medicine — bring questions. Or: we're recruiting new members for the fall season."></textarea>
+          <span class="field-hint">A sentence or two on the specific hook — the speaker, topic, occasion, or what you want residents to do. Claude can't know this on its own, so this is what stops the email from sounding generic.</span>
+        </label>
         <button class="btn btn-secondary" id="draft-email-btn" type="button">✨ Draft a promo email about your next event</button>
         <span class="field-hint">Email is drafted by Claude AI from your club's info and next upcoming event. Review before sending. Opens in your mail app — your members are not contacted directly from this page.</span>
         <div id="draft-status" class="form-status" hidden></div>
@@ -225,6 +229,7 @@
       document.getElementById('Hide Events').checked = false;
       setMediaPreview('thumbnail', '', 'Current banner:');
       setMediaPreview('flyer', '', 'Current flyer:');
+      document.getElementById('draft-context').value = '';
     }
     async function loadCurrentValues(slug) {
       if (!slug) { clearFormFields(); return; }
@@ -479,7 +484,8 @@
       $('#draft-email-btn').disabled = true;
       setDraftStatus('success', 'Drafting… (takes a few seconds)');
       try {
-        const { subject, body } = await ClubsAPI.leaderDraftEmail({ slug, submitter_email });
+        const context = $('#draft-context').value.trim();
+        const { subject, body } = await ClubsAPI.leaderDraftEmail({ slug, submitter_email, context });
         $('#draft-subject').value = subject || '';
         $('#draft-body').value = body || '';
         $('#draft-output').hidden = false;

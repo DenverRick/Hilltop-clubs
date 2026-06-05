@@ -10,34 +10,52 @@ import { computeUpcomingEvents } from './_events.js';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
-const MODEL = 'claude-haiku-4-5';
+const MODEL = 'claude-sonnet-4-5';
 const MAX_TOKENS = 700;
 
 const normalize = (s) => String(s || '').trim().toLowerCase();
+const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-function buildPrompt({ clubName, blurb, description, leaderName, nextEvent, hasFlyer }) {
+function buildPrompt({
+  clubName, blurb, description, leaderName, nextEvent, hasFlyer,
+  context, vibe, whatToBring, tags, teamReach, website, memberCount,
+}) {
   const eventLine = nextEvent
     ? `Next upcoming meeting: ${nextEvent.dayLabel}${nextEvent.startTime ? ` at ${nextEvent.startTime}` : ''}${nextEvent.location ? ` in ${nextEvent.location}` : ''}${nextEvent.note ? ` — ${nextEvent.note}` : ''}`
-    : `No specific upcoming meeting is scheduled — keep the email general (about the club itself).`;
+    : `No specific upcoming meeting is on the calendar — keep the email about the club itself rather than a single date.`;
 
-  const descLine = description ? `Detailed description: ${description}` : '';
-  const flyerLine = hasFlyer
-    ? `A promotional flyer is attached on the club page; the email can mention "see the flyer at hilltopclubs.org for more details."`
+  // The leader's own note about THIS email is the most important input — it's
+  // the specific hook (speaker, topic, occasion) that nothing in Airtable knows.
+  const contextLine = context
+    ? `MOST IMPORTANT — what the leader specifically wants this email to be about: ${context}`
     : '';
 
   return [
     `You're drafting a short promotional email for the leader of ${clubName} at Hilltop at Inspiration (a 55+ active adult community).`,
     `The email goes to current members and potentially-interested residents. Tone: warm, neighborly, concise — feels like a fellow resident writing, not corporate marketing.`,
     ``,
-    `Club background: ${blurb || '(no blurb on file)'}`,
-    descLine,
-    eventLine,
-    flyerLine,
+    contextLine,
     ``,
-    `Sign off from "${leaderName || 'the leadership team'}".`,
+    `Club details to draw on (use what's relevant; don't list them mechanically):`,
+    `- One-line blurb: ${blurb || '(none on file)'}`,
+    description ? `- Full description: ${description}` : '',
+    vibe ? `- Vibe / who comes: ${vibe}` : '',
+    whatToBring ? `- What to bring / how to prepare: ${whatToBring}` : '',
+    tags ? `- Tags: ${tags}` : '',
+    memberCount ? `- Member count: ${memberCount}` : '',
+    teamReach ? `- Members coordinate via the TeamReach app, group code ${teamReach}.` : '',
+    website ? `- Club website: ${website}` : '',
+    eventLine,
+    hasFlyer ? `- A promo flyer is on the club page at hilltopclubs.org; you may point readers there for more.` : '',
+    ``,
+    `Rules:`,
+    `- Lead with the specific hook above, not a generic greeting. If the leader gave a topic/speaker, that IS the email.`,
+    `- Use concrete, club-specific detail. Avoid filler like "we're excited to invite you" or "don't miss out".`,
+    `- Only state facts given above — do not invent speakers, topics, dates, or numbers.`,
+    `- Sign off from "${leaderName || 'the leadership team'}".`,
     ``,
     `Reply with ONLY a JSON object of this exact shape, no surrounding prose or markdown fences:`,
-    `{"subject": "<under 60 chars>", "body": "<3-4 short paragraphs, under 180 words, plain text with \\n between paragraphs>"}`,
+    `{"subject": "<under 50 chars, specific not generic — do NOT include the club name, it's added automatically>", "body": "<3-4 short paragraphs, under 180 words, plain text with \\n between paragraphs>"}`,
   ].filter(Boolean).join('\n');
 }
 
@@ -65,6 +83,9 @@ export async function handler(event) {
   if (!slug || !submitter_email) {
     return json(400, { error: 'Missing slug or submitter_email' });
   }
+  // Optional free-text hook the leader typed for THIS email. Cap length so a
+  // pasted wall of text can't blow up the prompt.
+  const context = String(payload.context || '').trim().slice(0, 600);
 
   const e = env();
   if (e.error) return e.error;
@@ -107,6 +128,13 @@ export async function handler(event) {
     leaderName: fields['Leader Name(s)'] || '',
     nextEvent,
     hasFlyer: !!(fields['Promo Flyer'] && fields['Promo Flyer'][0]),
+    context,
+    vibe: fields['Vibe / Demographics'] || '',
+    whatToBring: fields['What to Bring'] || '',
+    tags: Array.isArray(fields['Tags']) ? fields['Tags'].join(', ') : (fields['Tags'] || ''),
+    teamReach: fields['TeamReach'] || '',
+    website: fields['External Website'] || '',
+    memberCount: fields['Member Count'] || '',
   });
 
   // 4. Call Anthropic.
@@ -144,6 +172,14 @@ export async function handler(event) {
   const draft = parseModelOutput(textBlock?.text);
   if (!draft) {
     return json(502, { error: 'Drafting service returned an unexpected format. Please try again.' }, { 'Cache-Control': CACHE.NEVER });
+  }
+
+  // Prefix the subject with "[Club Name] - ". Strip any club-name prefix the
+  // model added anyway so we don't double it up.
+  const clubName = fields['Name'] || '';
+  if (clubName) {
+    const bare = draft.subject.replace(new RegExp(`^\\s*\\[?${escapeRegExp(clubName)}\\]?\\s*[-–:]?\\s*`, 'i'), '').trim();
+    draft.subject = `[${clubName}] - ${bare}`;
   }
 
   return json(200, draft, { 'Cache-Control': CACHE.NEVER });
