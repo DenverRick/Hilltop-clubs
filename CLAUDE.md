@@ -59,6 +59,40 @@ netlify/functions/
 
 The 8 categories: Sports & Fitness, Games & Cards, Arts & Crafts, Civic, Learning & Discussion, Social & Cultural, Service & Volunteer, Special Interests / Hobbies.
 
+## "Add to Home Screen" instructions (resident-facing copy)
+
+Reuse these verbatim whenever telling residents how to put hilltopclubs.org on
+their phone home screen (the icon is the Hilltop Clubs app icon — `apple-touch-icon.png`).
+The **iPhone Safari** steps are device-verified (2026-06, Rick's iPhone); note
+the menu lives at the **bottom-right** in current Safari. **Chrome on iPhone**
+borrows Apple's share sheet, so its flow looks like Safari's. **Chrome on
+Android is different** — no share sheet / no "Open as Web App" slider; it uses
+the three-dot menu's "Add to Home screen". Don't copy the iOS steps for Android.
+
+**iPhone / iPad — Safari:**
+1. Open https://hilltopclubs.org in Safari.
+2. Tap the three-dot menu (bottom right).
+3. Tap the Share button (the square with an up arrow).
+4. Select "View More".
+5. Scroll down and tap "Add to Home Screen".
+6. Tap "Add" (top right). Leave the "Open as Web App" slider ON.
+7. The Hilltop Clubs icon appears on the home screen.
+
+**iPhone / iPad — Chrome** (Chrome on iOS uses the iOS share sheet):
+1. Open https://hilltopclubs.org in Chrome.
+2. Tap the Share button (the square with an up arrow).
+3. Select "View More".
+4. Scroll down and tap "Add to Home Screen".
+5. Tap "Add" (top right). Leave the "Open as Web App" slider ON.
+
+**Android — Chrome** (DIFFERENT — no iOS share sheet, no Web App slider):
+1. Open https://hilltopclubs.org in Chrome.
+2. Tap the three-dot menu (⋮, top right).
+3. Tap "Add to Home screen" (or "Install app").
+4. Tap "Add" / "Install".
+
+Then just tap the Hilltop Clubs icon any time to open the directory.
+
 ## Working with Rick
 
 Rick is a "vibe coder" — prefer surgical edits, vanilla JS, explicit explanations of tradeoffs. Match the patterns in the Pickleball repo (`/Users/Miles/Documents/hilltop-pickleball-club`) when in doubt.
