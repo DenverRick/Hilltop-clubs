@@ -48,3 +48,10 @@
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Serve the web app manifest with the correct MIME (default is octet-stream,
+# which Chrome rejects for PWA / Add-to-Home-Screen).
+[[headers]]
+  for = "/site.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
