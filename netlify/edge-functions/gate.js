@@ -59,7 +59,7 @@ function isPublicPath(path) {
   if (path === '/robots.txt' || path === '/favicon.ico') return true;
   if (path === '/api/resident-login' || path === '/.netlify/functions/resident-login') return true;
   // Static assets needed to render the login page (and harmless to expose).
-  if (/\.(css|js|png|jpe?g|svg|gif|webp|ico|woff2?|ttf|map)$/i.test(path)) return true;
+  if (/\.(css|js|png|jpe?g|svg|gif|webp|ico|woff2?|ttf|map|webmanifest)$/i.test(path)) return true;
   return false;
 }
 
