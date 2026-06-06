@@ -77,6 +77,17 @@
         <input id="Short Blurb" type="text" maxlength="160" />
       </label>
 
+      <div class="announce-fields">
+        <label>📢 Announcement (optional — shows as a banner on your card and page)
+          <textarea id="Announcement" rows="2" maxlength="280" placeholder="e.g. Mon Jun 8: Quilt of Valor awards ceremony in M1 — all welcome, cake after!"></textarea>
+          <span class="field-hint">Great for a one-time event or notice. Set an expiry date below and it disappears on its own afterward — no need to come back and delete it.</span>
+        </label>
+        <label>Announcement expires (optional)
+          <input id="Announcement Expires" type="date" />
+          <span class="field-hint">After this date the announcement stops showing. Leave blank to keep showing it. To remove it sooner, set this to today (or earlier).</span>
+        </label>
+      </div>
+
       <label>Long description
         <textarea id="Long Description" rows="6"></textarea>
       </label>
@@ -209,6 +220,7 @@
       'Short Blurb', 'Long Description', 'Vibe / Demographics', 'What to Bring',
       'Meeting Frequency', 'Meeting Day', 'Meeting Schedule', 'Meeting Time', 'Meeting Location',
       'YouTube URLs', 'External Website', 'TeamReach',
+      'Announcement', 'Announcement Expires',
     ];
 
     // Club picker is a type-to-filter combobox: the visible text input feeds a
@@ -253,7 +265,7 @@
       const ids = ['Short Blurb', 'Long Description', 'Vibe / Demographics', 'What to Bring', 'Tags',
         'Meeting Frequency', 'Meeting Day', 'Meeting Schedule', 'Meeting Time',
         'Meeting Location', 'Member Count', 'YouTube URLs',
-        'External Website', 'TeamReach'];
+        'External Website', 'TeamReach', 'Announcement', 'Announcement Expires'];
       for (const id of ids) document.getElementById(id).value = '';
       document.getElementById('Hide Events').checked = false;
       setMediaPreview('thumbnail', '', 'Current banner:');
@@ -283,6 +295,8 @@
         const website = rawWebsite && !/^https?:\/\//i.test(rawWebsite) ? `https://${rawWebsite}` : rawWebsite;
         document.getElementById('External Website').value = website;
         document.getElementById('TeamReach').value = club.teamReach || '';
+        document.getElementById('Announcement').value = club.announcement || '';
+        document.getElementById('Announcement Expires').value = club.announcementExpires || '';
         document.getElementById('Hide Events').checked = !!club.hideEvents;
         setMediaPreview('thumbnail', club.thumbnail, 'Current banner:');
         setMediaPreview('flyer', club.promoFlyer, 'Current flyer:');

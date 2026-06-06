@@ -37,6 +37,18 @@ export function todayDenver() {
   return { ymd, date: new Date(y, m - 1, d) };
 }
 
+// Whether a club's leader Announcement should currently display. Shows while
+// today (America/Denver — never server-local UTC; see CLAUDE.md invariant #5)
+// is on or before the optional "Announcement Expires" date. Blank expiry =
+// show indefinitely. Empty text = nothing to show.
+export function isAnnouncementActive(fields) {
+  const text = String(fields['Announcement'] || '').trim();
+  if (!text) return false;
+  const expires = String(fields['Announcement Expires'] || '').slice(0, 10);
+  if (!expires) return true;
+  return expires >= todayDenver().ymd; // inclusive: shows through the expiry day
+}
+
 const WINDOW_DAYS = 28;
 const MAX_OCCURRENCES = 8;
 

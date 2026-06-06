@@ -123,6 +123,7 @@
           <div class="club-body">
             ${club.category ? `<div class="club-eyebrow"><a href="${escape(catHref)}">${escape(club.category)}</a></div>` : ''}
             <h2>${escape(club.name)}</h2>
+            ${(club.announcementActive && club.announcement) ? `<div class="announcement announcement-detail">📢 ${escape(club.announcement).replace(/\n/g, '<br>')}</div>` : ''}
             ${club.blurb ? `<p class="club-blurb">${escape(club.blurb)}</p>` : ''}
 
             ${meetingCells.length ? `

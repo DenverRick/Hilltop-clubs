@@ -18,6 +18,8 @@ const ALLOWED_FIELDS = new Set([
   'External Website',
   'TeamReach',
   'Hide Events',
+  'Announcement',
+  'Announcement Expires',
 ]);
 
 const normalize = (s) => String(s || '').trim().toLowerCase();

@@ -124,6 +124,12 @@
       const oneLine = club.whatToBring.replace(/\n+/g, ' ').trim();
       return `<div class="wtb-preview" title="${escape(oneLine)}">👋 ${escape(oneLine)}</div>`;
     }
+    // Timely leader announcement (already filtered server-side by expiry).
+    function announcementHTML(club) {
+      if (!club.announcement) return '';
+      const oneLine = club.announcement.replace(/\n+/g, ' ').trim();
+      return `<div class="announcement" title="${escape(oneLine)}">📢 ${escape(oneLine)}</div>`;
+    }
 
     let allClubs = null;
     let categoriesByName = new Map();
@@ -190,6 +196,7 @@
           ${c.thumbnail ? `<img class="thumbnail" src="${escape(c.thumbnail)}" alt="" />` : ''}
           ${cardChip(c)}
           <div class="name">${escape(c.name)}</div>
+          ${announcementHTML(c)}
           <div class="blurb">${escape(c.blurb)}</div>
           ${meetingLineHTML(c)}
         </a>
@@ -398,6 +405,7 @@
             ${c.thumbnail ? `<img class="thumbnail" src="${escape(c.thumbnail)}" alt="" />` : ''}
             ${cardChip(c)}
             <div class="name">${escape(c.name)}</div>
+            ${announcementHTML(c)}
             <div class="blurb">${escape(c.blurb)}</div>
             ${wtbPreviewHTML(c)}
             ${meetingLineHTML(c)}

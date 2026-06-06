@@ -53,7 +53,9 @@ netlify/functions/
 
 ## Airtable schema
 
-**Clubs:** Name, Slug, Primary Category (single-select, 8 buckets), Leader Name(s), Leader Email, Short Blurb, Long Description, Tags (multi), Meeting Frequency, Meeting Day, Meeting Schedule, Meeting Time, Meeting Location, Next Meeting (date — drives the "Today/Tomorrow/Meets X" chip on cards), Member Count, Vibe / Demographics, YouTube URLs (one per line), Thumbnail Image (attachment), External Website, TeamReach, Active (checkbox), Last Updated (auto).
+**Clubs:** Name, Slug, Primary Category (single-select, 8 buckets), Leader Name(s), Leader Email, Short Blurb, Long Description, Tags (multi), Meeting Frequency, Meeting Day, Meeting Schedule, Meeting Time, Meeting Location, Next Meeting (date — drives the "Today/Tomorrow/Meets X" chip on cards), Member Count, Vibe / Demographics, YouTube URLs (one per line), Thumbnail Image (attachment), External Website, TeamReach, **Announcement** (multiline — timely banner on the card + detail page), **Announcement Expires** (date), Active (checkbox), Last Updated (auto).
+
+**Announcement banner:** leader-editable (allowlisted in `leader-update.js`). Shown on the club card + detail page while today (computed in `America/Denver` via `isAnnouncementActive()` in `_events.js`, per invariant #5) is on/before `Announcement Expires`; blank expiry = show until removed. `get-clubs-by-category.js` only returns it when active; `get-club.js` returns the raw text + expiry (for the leader form to edit) plus an `announcementActive` flag (for the public detail page). Like every field, blank-on-save keeps the existing value — to clear early, set the expiry to today/past.
 
 **Categories:** Name, Slug, Sort Order, Icon (emoji), Short Description.
 

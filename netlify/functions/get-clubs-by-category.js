@@ -1,4 +1,5 @@
 import { preflight, json, env, airtableFetch, stripSensitive, escapeFormulaString, CACHE } from './_airtable.js';
+import { isAnnouncementActive } from './_events.js';
 
 export async function handler(event) {
   const pre = preflight(event);
@@ -51,6 +52,9 @@ export async function handler(event) {
       meetingFrequency: f['Meeting Frequency'] || '',
       meetingSchedule: f['Meeting Schedule'] || '',
       thumbnail: f['Thumbnail Image']?.[0]?.thumbnails?.large?.url || f['Thumbnail Image']?.[0]?.url || '',
+      // Only surface the announcement on cards while it's active (Denver-date
+      // expiry computed server-side); empty string when none/expired.
+      announcement: isAnnouncementActive(f) ? String(f['Announcement']).trim() : '',
       lastUpdated: f['Last Updated'] || null,
       createdTime: safe.createdTime || null,
     };
