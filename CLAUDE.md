@@ -38,7 +38,8 @@ netlify/functions/
   get-club-mailto.js
   get-mpr-today.js           Today's MPR-room events for the landing page; reads the SEPARATE "Hilltop Clubhouse" base
   leader-update.js
-  leader-upload-thumbnail.js
+  leader-upload-thumbnail.js / leader-upload-flyer.js   (replace attachment)
+  leader-remove-image.js     (clear flyer/thumbnail — email-match, target allowlist)
 ```
 
 ## Required env vars (Netlify dashboard)

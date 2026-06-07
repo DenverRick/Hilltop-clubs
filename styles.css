@@ -860,6 +860,18 @@ form.leader-form textarea { min-height: 6rem; resize: vertical; }
   object-fit: contain;
   background: #f8fafc;
 }
+.btn-remove-media {
+  align-self: flex-start;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--danger);
+  background: none;
+  border: 1px solid var(--gray-light);
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+}
+.btn-remove-media:hover { background: #fef2f2; border-color: var(--danger); }
 form.leader-form input:focus, form.leader-form select:focus, form.leader-form textarea:focus {
   outline: none;
   border-color: var(--primary-color);

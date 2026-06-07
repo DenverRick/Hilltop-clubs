@@ -143,6 +143,7 @@
         <div id="thumbnail-preview" class="current-media" hidden>
           <span class="current-media-label">Current banner:</span>
           <img id="thumbnail-preview-img" alt="Current banner" />
+          <button type="button" id="thumbnail-remove" class="btn-remove-media">Remove banner</button>
         </div>
         <input id="thumbnail-file" type="file" accept="image/jpeg,image/png,image/webp" />
         <span class="field-hint"><strong>Photo policy:</strong> please don't upload images that show identifiable club members. We don't blur or anonymize uploaded photos — if a photo shows people, we'll ask you for a different one. Best options: a wide shot with no faces, an object/scene photo (equipment, location), or reply to Rick to have an AI banner generated for your review.</span>
@@ -153,6 +154,7 @@
         <div id="flyer-preview" class="current-media" hidden>
           <span class="current-media-label">Current flyer:</span>
           <img id="flyer-preview-img" alt="Current flyer" />
+          <button type="button" id="flyer-remove" class="btn-remove-media">Remove flyer</button>
         </div>
         <input id="flyer-file" type="file" accept="image/jpeg,image/png,image/webp" />
         <span class="field-hint">Shown on your club's public page as a "📣 Latest from [your club]" callout. Replaces whatever's there now whenever you upload a new one.</span>
@@ -510,6 +512,31 @@
         setFlyerStatus('error', err.message);
       }
     });
+
+    // Remove an uploaded banner/flyer. The "Remove" button only shows while a
+    // current image exists (it lives inside the preview block, which is hidden
+    // when there's nothing to show).
+    async function removeMedia(which) {
+      const setStatusFn = which === 'flyer' ? setFlyerStatus : setThumbStatus;
+      const noun = which === 'flyer' ? 'promo flyer' : 'banner image';
+      const slug = $('#slug').value.trim();
+      const submitter_email = $('#submitter_email').value.trim();
+      if (!slug || !submitter_email) {
+        setStatusFn('error', 'Pick your club and enter your email above first.');
+        return;
+      }
+      if (!confirm(`Remove your ${noun}? You can upload a new one anytime.`)) return;
+      setStatusFn('success', 'Removing…');
+      try {
+        await ClubsAPI.leaderRemoveImage({ slug, submitter_email, target: which });
+        setMediaPreview(which, '', which === 'flyer' ? 'Current flyer:' : 'Current banner:');
+        setStatusFn('success', `${which === 'flyer' ? 'Flyer' : 'Banner'} removed — your page updates within a minute.`);
+      } catch (err) {
+        setStatusFn('error', err.message);
+      }
+    }
+    $('#thumbnail-remove').addEventListener('click', () => removeMedia('thumbnail'));
+    $('#flyer-remove').addEventListener('click', () => removeMedia('flyer'));
 
     // AI promo email drafter.
     function setDraftStatus(kind, message) {

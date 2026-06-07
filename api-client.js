@@ -30,6 +30,7 @@
     leaderUpdate: (payload) => postJSON('/api/leader-update', payload),
     leaderUploadThumbnail: (payload) => postJSON('/api/leader-upload-thumbnail', payload),
     leaderUploadFlyer: (payload) => postJSON('/api/leader-upload-flyer', payload),
+    leaderRemoveImage: (payload) => postJSON('/api/leader-remove-image', payload),
     leaderDraftEmail: (payload) => postJSON('/api/leader-draft-email', payload),
   };
 })();
