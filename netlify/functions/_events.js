@@ -176,6 +176,37 @@ export async function computeWeekClubEventsFromMpr({ baseId, token, tableClubs, 
 }
 
 /**
+ * Today/Tomorrow widget source. Union of:
+ *   (a) ALL-ROOMS recurring club events from MeetingSlots (overrides applied,
+ *       published-weeks gated) — the same engine the club pages use, so Library
+ *       / Movement Studio / Pool meetings show, not just the MPR; plus
+ *   (b) MPR-table events with no matching recurring occurrence — i.e. one-off
+ *       specials that live only in the published MPR table (e.g. a Fun Club
+ *       Trivia Night), which have no recurring slot.
+ * Deduped on date|clubSlug|startTime. Recurring is authoritative (it has the
+ * week's overrides); the MPR base is supplementary, so if only it errors we
+ * still return the recurring set rather than blanking the widget.
+ */
+export async function computeWeekClubEventsAllRooms({ baseId, token, tableClubs, mprBaseId, windowStart, windowEnd }) {
+  const recurring = await computeAllClubEvents({ baseId, token, tableClubs, windowStart, windowEnd });
+  if (!recurring.ok) return recurring;
+
+  const events = [...recurring.events];
+  const seen = new Set(events.map((e) => `${e.date}|${e.clubSlug}|${e.startTime}`));
+
+  const mpr = await computeWeekClubEventsFromMpr({ baseId, token, tableClubs, mprBaseId, windowStart, windowEnd });
+  if (mpr.ok) {
+    for (const e of mpr.events) {
+      const key = `${e.date}|${e.clubSlug}|${e.startTime}`;
+      if (!seen.has(key)) { seen.add(key); events.push(e); }
+    }
+  }
+
+  events.sort((a, b) => (a.date !== b.date ? a.date.localeCompare(b.date) : a.startTime.localeCompare(b.startTime)));
+  return { ok: true, events };
+}
+
+/**
  * Compute club meetings across ALL opted-in clubs within a date window.
  * (MeetingSlots-recurrence path — still used by the per-club "Upcoming
  * meetings" list on club pages, which projects further ahead than the MPR
@@ -257,11 +288,20 @@ export async function computeAllClubEvents({ baseId, token, tableClubs, windowSt
   // 5. Expand each slot, join its club + overrides.
   const occurrences = [];
   for (const slot of slots) {
-    // Resolve the slot's club: explicit Club link first, else name-match the
-    // slot's Event Name against the opted-in clubs. Slots that match neither
-    // (community classes like Yoga, Tai Chi) are skipped.
-    let club = clubById.get(slot.fields['Club']?.[0]);
-    if (!club) club = matchClubByName(slot.fields['Event Name'], clubIndex);
+    // Resolve the slot's club. If the slot has an explicit Club link, trust it:
+    // a link resolving to a club that ISN'T active/opted-in (e.g. "Chinese
+    // Mah-Jongg" linked to the pending "Mah-Jongg, Chinese") means skip it —
+    // do NOT fall through to name-matching, or it would mislabel onto a
+    // different active club ("Mah-Jongg Club"). Only un-linked slots use
+    // name-matching; community classes (Yoga, Tai Chi) match nothing and skip.
+    const linkedId = slot.fields['Club']?.[0];
+    let club;
+    if (linkedId) {
+      club = clubById.get(linkedId);
+      if (!club) continue; // linked to an inactive/hidden club — don't surface
+    } else {
+      club = matchClubByName(slot.fields['Event Name'], clubIndex);
+    }
     if (!club) continue;
 
     const dates = expandRecurrence(
