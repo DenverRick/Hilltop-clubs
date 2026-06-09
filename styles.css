@@ -1082,4 +1082,34 @@ footer.site-footer .credits {
   .club-footer { border-top: 1px solid #999; }
   a, a:visited { color: black; text-decoration: none; }
   a[href^="http"]:after { content: " (" attr(href) ")"; font-size: 0.85em; color: #555; }
+  .hero { background: #1e40af !important; }
+  .hero-lightbulb svg { filter: none; }
+}
+
+/* Dynamic "lightbulb hero" — branded banner on the Senior Geeks club page.
+   Deep-blue tokens are scoped here so they don't shift the app's lighter
+   --primary-color globally; --accent-color (#f59e0b) is the shared token. */
+.hero {
+  --hero-blue: #2563eb;
+  --hero-blue-dark: #1e40af;
+  background: radial-gradient(circle at 50% 22%, var(--hero-blue) 0%, var(--hero-blue-dark) 72%);
+  padding: 72px 20px; color: #fff; text-align: center; position: relative; overflow: hidden;
+  border-radius: 16px; margin-bottom: 1.5rem;
+}
+.hero-content { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.hero-lightbulb svg { width: 88px; height: 88px; filter: drop-shadow(0 0 28px rgba(245,158,11,.55)); }
+.hero-content h1 { font-size: 3.2rem; margin-bottom: .25rem; text-shadow: 0 2px 12px rgba(0,0,0,.25);
+  font-weight: 700; letter-spacing: -.5px; color: #fff; }
+.hero-tagline { font-size: 1.5rem; margin-bottom: .25rem; opacity: .9; }
+.hero-speaker { display: flex; flex-direction: column; gap: .2rem; margin: .5rem 0 0; padding: .9rem 1.4rem;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 12px; max-width: 560px; }
+.hero-speaker__label { font-size: .85rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-color); }
+.hero-speaker__title { font-size: 1.35rem; font-weight: 600; line-height: 1.25; }
+.hero-speaker__name { font-size: 1.05rem; opacity: .9; }
+.hero-speaker--empty { background: none; border: none; padding: .25rem 0; font-size: 1.05rem; opacity: .8; }
+
+@media (max-width: 600px) {
+  .hero { padding: 48px 16px; }
+  .hero-content h1 { font-size: 2.3rem; }
+  .hero-tagline { font-size: 1.2rem; }
 }
