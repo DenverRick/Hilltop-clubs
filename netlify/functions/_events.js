@@ -49,6 +49,22 @@ export function isAnnouncementActive(fields) {
   return expires >= todayDenver().ymd; // inclusive: shows through the expiry day
 }
 
+// Parse a 12-hour clock string ("9:30 am", "6:00PM") to minutes-since-midnight
+// for chronological sorting — string-comparing these puts "9:30 am" after
+// "12:30 pm". Blank/unparseable sorts last.
+function timeToMinutes(t) {
+  const m = String(t || '').trim().match(/^(\d{1,2}):(\d{2})\s*([ap]m)$/i);
+  if (!m) return Number.MAX_SAFE_INTEGER;
+  let h = parseInt(m[1], 10) % 12;
+  if (m[3].toLowerCase() === 'pm') h += 12;
+  return h * 60 + parseInt(m[2], 10);
+}
+// Sort club events chronologically: by date, then by actual start time.
+function byDateThenTime(a, b) {
+  if (a.date !== b.date) return a.date.localeCompare(b.date);
+  return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+}
+
 const WINDOW_DAYS = 28;
 const MAX_OCCURRENCES = 8;
 
@@ -171,7 +187,7 @@ export async function computeWeekClubEventsFromMpr({ baseId, token, tableClubs, 
       cancelled: false,
     });
   }
-  out.sort((a, b) => (a.date !== b.date ? a.date.localeCompare(b.date) : a.startTime.localeCompare(b.startTime)));
+  out.sort(byDateThenTime);
   return { ok: true, events: out };
 }
 
@@ -202,7 +218,7 @@ export async function computeWeekClubEventsAllRooms({ baseId, token, tableClubs,
     }
   }
 
-  events.sort((a, b) => (a.date !== b.date ? a.date.localeCompare(b.date) : a.startTime.localeCompare(b.startTime)));
+  events.sort(byDateThenTime);
   return { ok: true, events };
 }
 
@@ -336,10 +352,7 @@ export async function computeAllClubEvents({ baseId, token, tableClubs, windowSt
     }
   }
 
-  occurrences.sort((a, b) => {
-    if (a.date !== b.date) return a.date.localeCompare(b.date);
-    return a.startTime.localeCompare(b.startTime);
-  });
+  occurrences.sort(byDateThenTime);
   return { ok: true, events: occurrences };
 }
 
