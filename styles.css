@@ -468,7 +468,9 @@ h3 { font-size: 1.2rem; margin: 0 0 0.5rem; }
 
 .club-banner {
   width: 100%;
-  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: center;
   display: block;
   background: var(--gray-light);
 }
