@@ -112,6 +112,67 @@
       return /^(https?:|mailto:|tel:)/i.test(v) ? v : `https://${v}`;
     }
 
+    // Airtable rich-text fields (Long Description, blurb, etc.) serialize their
+    // formatting as Markdown, which would otherwise show literal "**bold**" on
+    // the page. Render a safe subset to HTML: escape first so any raw HTML the
+    // leader typed stays inert, then convert headings, bold, italic, links, and
+    // bullet/number lists. Only http(s)/mailto links are allowed through. A
+    // single-paragraph value returns inline (no <p>) so it drops cleanly into
+    // existing inline containers like the blurb and announcement banner.
+    function renderMarkdown(src) {
+      const raw = String(src ?? '').replace(/\r\n/g, '\n').trim();
+      if (!raw) return '';
+
+      const inline = (s) => {
+        let h = escape(s);
+        h = h.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, label, url) => {
+          const href = externalUrl(url.replace(/&amp;/g, '&'));
+          return /^(https?:|mailto:)/i.test(href)
+            ? `<a href="${escape(href)}" target="_blank" rel="noopener">${label}</a>` : label;
+        });
+        h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        h = h.replace(/(^|[^\w*])\*([^\s*][^*]*?)\*/g, '$1<em>$2</em>');
+        h = h.replace(/(^|[^\w_])_([^\s_][^_]*?)_(?=$|[^\w_])/g, '$1<em>$2</em>');
+        h = h.replace(/(^|[\s(])((?:https?:\/\/|www\.)[^\s<)]+)/gi,
+          (m, pre, url) => `${pre}<a href="${escape(externalUrl(url))}" target="_blank" rel="noopener">${url}</a>`);
+        return h;
+      };
+
+      const out = [];
+      let para = [], list = null;
+      const flushPara = () => { if (para.length) { out.push(`<p>${para.map(inline).join('<br>')}</p>`); para = []; } };
+      const flushList = () => {
+        if (list) { out.push(`<${list.tag}>${list.items.map((i) => `<li>${inline(i)}</li>`).join('')}</${list.tag}>`); list = null; }
+      };
+
+      for (const line of raw.split('\n')) {
+        const t = line.trim();
+        const heading = t.match(/^(#{1,6})\s+(.*)$/);
+        const bullet = t.match(/^[-*]\s+(.*)$/);
+        const numbered = t.match(/^\d+\.\s+(.*)$/);
+        if (heading) {
+          flushPara(); flushList();
+          out.push(`<h${Math.min(heading[1].length + 2, 6)}>${inline(heading[2])}</h${Math.min(heading[1].length + 2, 6)}>`);
+        } else if (bullet) {
+          flushPara();
+          if (!list || list.tag !== 'ul') { flushList(); list = { tag: 'ul', items: [] }; }
+          list.items.push(bullet[1]);
+        } else if (numbered) {
+          flushPara();
+          if (!list || list.tag !== 'ol') { flushList(); list = { tag: 'ol', items: [] }; }
+          list.items.push(numbered[1]);
+        } else if (t === '') {
+          flushPara(); flushList();
+        } else {
+          flushList(); para.push(t);
+        }
+      }
+      flushPara(); flushList();
+
+      const single = out.length === 1 && out[0].startsWith('<p>') && out[0].endsWith('</p>');
+      return single ? out[0].slice(3, -4) : out.join('');
+    }
+
     function youtubeId(url) {
       try {
         const u = new URL(url);
@@ -187,8 +248,8 @@
           <div class="club-body">
             ${(club.category && !isSeniorGeeks) ? `<div class="club-eyebrow"><a href="${escape(catHref)}">${escape(club.category)}</a></div>` : ''}
             ${isSeniorGeeks ? '' : `<h2>${escape(club.name)}</h2>`}
-            ${(club.announcementActive && club.announcement) ? `<div class="announcement announcement-detail">📢 ${escape(club.announcement).replace(/\n/g, '<br>')}</div>` : ''}
-            ${club.blurb ? `<p class="club-blurb">${escape(club.blurb)}</p>` : ''}
+            ${(club.announcementActive && club.announcement) ? `<div class="announcement announcement-detail">📢 ${renderMarkdown(club.announcement)}</div>` : ''}
+            ${club.blurb ? `<p class="club-blurb">${renderMarkdown(club.blurb)}</p>` : ''}
 
             ${meetingCells.length ? `
               <div class="meeting-strip">
@@ -215,9 +276,9 @@
                 </ul>
               </div>` : ''}
 
-            ${club.description ? `<div class="club-description">${escape(club.description).replace(/\n/g, '<br>')}</div>` : ''}
+            ${club.description ? `<div class="club-description">${renderMarkdown(club.description)}</div>` : ''}
             ${club.vibe ? `<div class="vibe">${escape(club.vibe)}</div>` : ''}
-            ${club.whatToBring ? `<div class="what-to-bring"><div class="wtb-label">👋 First time? Bring this:</div><div class="wtb-text">${escape(club.whatToBring).replace(/\n/g, '<br>')}</div></div>` : ''}
+            ${club.whatToBring ? `<div class="what-to-bring"><div class="wtb-label">👋 First time? Bring this:</div><div class="wtb-text">${renderMarkdown(club.whatToBring)}</div></div>` : ''}
 
             ${videos.length ? `
               <div class="video-grid ${videos.length > 1 ? 'has-multiple' : ''}">
