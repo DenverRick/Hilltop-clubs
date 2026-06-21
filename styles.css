@@ -1095,15 +1095,15 @@ footer.site-footer .credits {
   --hero-blue: #2563eb;
   --hero-blue-dark: #1e40af;
   background: radial-gradient(circle at 50% 22%, var(--hero-blue) 0%, var(--hero-blue-dark) 72%);
-  padding: 72px 20px; color: #fff; text-align: center; position: relative; overflow: hidden;
+  padding: 40px 20px; color: #fff; text-align: center; position: relative; overflow: hidden;
   border-radius: 16px; margin-bottom: 1.5rem;
 }
-.hero-content { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
-.hero-lightbulb svg { width: 88px; height: 88px; filter: drop-shadow(0 0 28px rgba(245,158,11,.55)); }
-.hero-content h1 { font-size: 3.2rem; margin-bottom: .25rem; text-shadow: 0 2px 12px rgba(0,0,0,.25);
+.hero-content { display: flex; flex-direction: column; align-items: center; gap: .65rem; }
+.hero-lightbulb svg { width: 60px; height: 60px; filter: drop-shadow(0 0 28px rgba(245,158,11,.55)); }
+.hero-content h1 { font-size: 2.2rem; margin-bottom: .25rem; text-shadow: 0 2px 12px rgba(0,0,0,.25);
   font-weight: 700; letter-spacing: -.5px; color: #fff; }
-.hero-tagline { font-size: 1.5rem; margin-bottom: .25rem; opacity: .9; }
-.hero-speaker { display: flex; flex-direction: column; gap: .2rem; margin: .5rem 0 0; padding: .9rem 1.4rem;
+.hero-tagline { font-size: 1.2rem; margin-bottom: .25rem; opacity: .9; }
+.hero-speaker { display: flex; flex-direction: column; gap: .2rem; margin: .5rem 0 0; padding: .7rem 1.1rem;
   background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 12px; max-width: 560px; }
 .hero-speaker__label { font-size: .85rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-color); }
 .hero-speaker__title { font-size: 1.35rem; font-weight: 600; line-height: 1.25; }
