@@ -64,6 +64,7 @@
           <button class="btn btn-secondary" id="cancel-top" type="button">Cancel</button>
         </div>
         <div id="login-status" class="form-status" hidden></div>
+        <button type="button" id="forget-logins" class="btn btn-secondary btn-small" hidden>Forget saved sign-ins on this device</button>
       </div>
 
       <!-- Step 2: edit fields. Hidden until login verified. -->
@@ -230,6 +231,7 @@
     // of single-letter jumps in a native <select>. The typed name is resolved
     // to its slug into the hidden #slug field, which the rest of the page reads.
     const nameToSlug = new Map();
+    const slugToName = new Map();
     const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
     async function populateClubs() {
       const search = $('#club-search');
@@ -239,12 +241,61 @@
         if (!clubs.length) { search.placeholder = 'No clubs yet'; search.disabled = true; return; }
         const sorted = clubs.slice().sort((a, b) => a.name.localeCompare(b.name));
         nameToSlug.clear();
-        for (const c of sorted) nameToSlug.set(c.name.toLowerCase(), c.slug);
+        slugToName.clear();
+        for (const c of sorted) { nameToSlug.set(c.name.toLowerCase(), c.slug); slugToName.set(c.slug, c.name); }
         list.innerHTML = sorted.map((c) => `<option value="${escAttr(c.name)}"></option>`).join('');
       } catch (err) {
         search.placeholder = `Error: ${err.message}`;
       }
     }
+
+    // Remember each club's sign-in on THIS device so a returning leader (or Rick,
+    // editing many clubs from his own computer) doesn't retype the club + email
+    // every time. Stored only in localStorage on this browser — never sent
+    // anywhere new; the email is the leader's own address, already used to log
+    // in. A "Forget saved sign-ins" button clears it for shared machines.
+    const LS_LOGINS = 'hc_leader_logins';   // { slug: email }
+    const LS_LAST = 'hc_leader_last_slug';
+    function readLogins() { try { return JSON.parse(localStorage.getItem(LS_LOGINS)) || {}; } catch { return {}; } }
+    function rememberedEmail(slug) { return (slug && readLogins()[slug]) || ''; }
+    function rememberLogin(slug, email) {
+      if (!slug || !email) return;
+      const m = readLogins(); m[slug] = email;
+      try { localStorage.setItem(LS_LOGINS, JSON.stringify(m)); localStorage.setItem(LS_LAST, slug); } catch {}
+      refreshForgetButton();
+    }
+    function refreshForgetButton() {
+      $('#forget-logins').hidden = Object.keys(readLogins()).length === 0;
+    }
+    function selectClubBySlug(slug) {
+      const name = slugToName.get(slug);
+      if (!name) return false;
+      $('#club-search').value = name;
+      $('#slug').value = slug;
+      return true;
+    }
+    // On load, jump straight to a club via ?slug=… (e.g. a per-club "Edit" link),
+    // falling back to the last club edited on this device. If we have its saved
+    // email, auto-attempt login so the edit fields appear without a click.
+    function initSavedLogin() {
+      refreshForgetButton();
+      const params = new URLSearchParams(location.search);
+      const targetSlug = (params.get('slug') || '').trim() || localStorage.getItem(LS_LAST) || '';
+      if (!targetSlug || !selectClubBySlug(targetSlug)) return;
+      const email = rememberedEmail(targetSlug);
+      if (!email) return;
+      $('#submitter_email').value = email;
+      attemptLogin();
+    }
+    $('#forget-logins').addEventListener('click', () => {
+      try { localStorage.removeItem(LS_LOGINS); localStorage.removeItem(LS_LAST); } catch {}
+      $('#club-search').value = '';
+      $('#slug').value = '';
+      $('#submitter_email').value = '';
+      collapseToLogin();
+      setLoginStatus('success', '');
+      refreshForgetButton();
+    });
     // Map what's typed to a slug. Exact name wins; otherwise a unique prefix
     // match (so two or three letters can land them on their club).
     function resolveSlug() {
@@ -344,6 +395,7 @@
         setLoginStatus('success', '');
         await loadCurrentValues(slug);
         revealEditSection(res.name);
+        rememberLogin(slug, submitter_email);
       } catch (err) {
         setLoginStatus('error', err.message);
       } finally {
@@ -352,7 +404,14 @@
     }
     $('#login-btn').addEventListener('click', attemptLogin);
     // Changing club or email after login drops back to the login step.
-    $('#club-search').addEventListener('input', () => { resolveSlug(); collapseToLogin(); });
+    $('#club-search').addEventListener('input', () => {
+      const slug = resolveSlug();
+      collapseToLogin();
+      // Once the typed text resolves to a club, fill in its saved email (if any)
+      // so the leader only has to confirm, not retype.
+      const email = rememberedEmail(slug);
+      if (email) $('#submitter_email').value = email;
+    });
     $('#submitter_email').addEventListener('change', collapseToLogin);
     $('#switch-club').addEventListener('click', () => {
       $('#club-search').value = '';
@@ -635,7 +694,7 @@
     $('#cancel-top').addEventListener('click', onCancel);
     $('#cancel-bottom').addEventListener('click', onCancel);
 
-    populateClubs();
+    populateClubs().then(initSavedLogin);
   </script>
 </body>
 </html>

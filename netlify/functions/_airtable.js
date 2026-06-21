@@ -58,14 +58,26 @@ export async function airtableFetch(path, { token, method = 'GET', body, query }
     const qs = new URLSearchParams(query).toString();
     if (qs) url += `?${qs}`;
   }
-  const res = await fetch(url, {
+  const init = {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: body ? JSON.stringify(body) : undefined,
-  });
+  };
+  // Airtable caps each base at ~5 requests/second and replies 429 when a burst
+  // exceeds it. The clubs site, the calendar app, and the iPad reader all share
+  // one base, so brief bursts happen. Retry a 429 a few times with a short
+  // backoff before giving up — turns a transient spike into a slightly slower
+  // response instead of a visible "Request failed" for the resident.
+  const backoffs = [300, 700, 1500];
+  let res;
+  for (let attempt = 0; ; attempt++) {
+    res = await fetch(url, init);
+    if (res.status !== 429 || attempt >= backoffs.length) break;
+    await new Promise((r) => setTimeout(r, backoffs[attempt]));
+  }
   const text = await res.text();
   let data;
   try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }

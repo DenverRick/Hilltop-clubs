@@ -1,11 +1,28 @@
 // Tiny fetch wrapper around /api/* — exposed as window.ClubsAPI.
 
 (function () {
-  async function getJSON(path) {
-    const res = await fetch(path);
-    const data = await res.json().catch(() => ({}));
+  // Parse a response strictly as JSON. If the body isn't JSON (e.g. the resident
+  // gate served an HTML login page after a session expiry, which fetch follows
+  // transparently), do NOT silently return an empty object — that's how a save
+  // that never persisted could report success. Throw a clear, actionable error.
+  async function parseJSON(res) {
+    const text = await res.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : {}; } catch { data = null; }
+    if (data === null) {
+      if (res.status === 401 || /<html|<!doctype/i.test(text)) {
+        throw new Error('Your resident session has expired. Reload the page and sign in again.');
+      }
+      throw new Error(`Unexpected response from the server (status ${res.status}).`);
+    }
+    if (res.status === 429) {
+      throw new Error('The directory is busy right now. Please wait a few seconds and refresh the page.');
+    }
     if (!res.ok) throw new Error(data.error || `Request failed: ${res.status}`);
     return data;
+  }
+  async function getJSON(path) {
+    return parseJSON(await fetch(path));
   }
   async function postJSON(path, body) {
     const res = await fetch(path, {
@@ -13,9 +30,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `Request failed: ${res.status}`);
-    return data;
+    return parseJSON(res);
   }
   window.ClubsAPI = {
     getCategories: () => getJSON('/api/get-categories'),

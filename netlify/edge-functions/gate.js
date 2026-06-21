@@ -45,13 +45,29 @@ export default async function gate(request, context) {
     }
   }
 
-  // Not authenticated → send to the login page with a safe return path.
+  // Not authenticated. For API calls, a 302 to the HTML login page is useless —
+  // fetch() silently follows it and the caller sees a 200 with login HTML,
+  // which JSON clients then mistake for a successful response (e.g. a leader's
+  // save reporting "Saved!" while nothing was written). So gate the API with a
+  // clean 401 JSON instead, and only redirect actual page navigations.
+  if (isApiPath(path)) {
+    return new Response(
+      JSON.stringify({ error: 'Your resident session has expired. Reload the page and sign in again.' }),
+      { status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } },
+    );
+  }
+
+  // Page navigation → send to the login page with a safe return path.
   const next = safeNext(path + url.search);
   const location = `${url.origin}/login?next=${encodeURIComponent(next)}`;
   return new Response(null, {
     status: 302,
     headers: { Location: location, 'Cache-Control': 'no-store' },
   });
+}
+
+function isApiPath(path) {
+  return path.startsWith('/api/') || path.startsWith('/.netlify/functions/');
 }
 
 function isPublicPath(path) {
