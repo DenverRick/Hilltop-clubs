@@ -1031,6 +1031,8 @@ form.leader-form .form-actions {
   padding: 0.4rem 0.85rem;
   font-size: 0.9rem;
 }
+.header-launch { display: inline-block; margin-top: 0.7rem; }
+.edit-banner-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 
 footer.site-footer {
   text-align: center;

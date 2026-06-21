@@ -16,6 +16,7 @@
   <header class="site-header">
     <h1><a href="/">Hilltop Clubs</a></h1>
     <div class="tagline">Club leader — update your listing</div>
+    <a class="btn btn-secondary btn-small header-launch" href="/" target="_blank" rel="noopener">Open hilltopclubs.org ↗</a>
   </header>
 
   <main>
@@ -71,8 +72,13 @@
       <div id="edit-section" hidden>
         <div class="edit-banner">
           <span id="edit-banner-text">Editing your club</span>
-          <button class="btn btn-secondary btn-small" id="switch-club" type="button">Switch club</button>
+          <div class="edit-banner-actions">
+            <button class="btn btn-primary btn-small" type="submit">Save changes</button>
+            <button class="btn btn-secondary btn-small" id="cancel-edit-top" type="button">Cancel</button>
+            <button class="btn btn-secondary btn-small" id="switch-club" type="button">Switch club</button>
+          </div>
         </div>
+        <div id="status-top" class="form-status" hidden></div>
 
       <label>Short blurb (one sentence for the club view)
         <input id="Short Blurb" type="text" maxlength="160" />
@@ -354,6 +360,7 @@
         setMediaPreview('thumbnail', club.thumbnail, 'Current banner:');
         setMediaPreview('flyer', club.promoFlyer, 'Current flyer:');
         $('#status').hidden = true;
+        $('#status-top').hidden = true;
       } catch (err) {
         setStatus('error', `Couldn't load current values: ${err.message}`);
       }
@@ -416,6 +423,7 @@
     $('#switch-club').addEventListener('click', () => {
       $('#club-search').value = '';
       $('#slug').value = '';
+      $('#submitter_email').value = '';
       collapseToLogin();
       setLoginStatus('success', '');
     });
@@ -474,11 +482,15 @@
       emailInput.focus();
     });
 
+    // Mirror the save status to both the top (under the edit banner) and bottom
+    // status lines, so feedback is visible whichever Save button was used.
     function setStatus(kind, message) {
-      const el = $('#status');
-      el.hidden = false;
-      el.className = `form-status ${kind}`;
-      el.textContent = message;
+      for (const id of ['status', 'status-top']) {
+        const el = document.getElementById(id);
+        el.hidden = false;
+        el.className = `form-status ${kind}`;
+        el.textContent = message;
+      }
     }
 
     // Thumbnail upload — independent of the main form save. Reads the chosen
@@ -692,6 +704,7 @@
     // Cancel buttons (top + bottom) — discard edits and return to the landing page.
     function onCancel() { window.location.href = '/'; }
     $('#cancel-top').addEventListener('click', onCancel);
+    $('#cancel-edit-top').addEventListener('click', onCancel);
     $('#cancel-bottom').addEventListener('click', onCancel);
 
     populateClubs().then(initSavedLogin);
