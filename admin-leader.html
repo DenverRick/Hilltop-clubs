@@ -89,10 +89,12 @@
           <textarea id="Announcement" rows="2" maxlength="280" placeholder="e.g. Mon Jun 8: Quilt of Valor awards ceremony in M1 — all welcome, cake after!"></textarea>
           <span class="field-hint">Great for a one-time event or notice. Set an expiry date below and it disappears on its own afterward — no need to come back and delete it.</span>
         </label>
+        <div id="announcement-status" hidden style="margin:4px 0 8px; font-size:.875rem;"></div>
         <label>Announcement expires (optional)
           <input id="Announcement Expires" type="date" />
-          <span class="field-hint">After this date the announcement stops showing. Leave blank to keep showing it. To remove it sooner, set this to today (or earlier).</span>
+          <span class="field-hint">After this date the announcement stops showing. Leave blank to keep showing it.</span>
         </label>
+        <button type="button" id="remove-announcement" hidden class="btn btn-secondary btn-small" style="margin-top:4px; color:#b91c1c;">✕ Remove announcement</button>
       </div>
 
       <label>Long description
@@ -327,6 +329,8 @@
         'External Website', 'TeamReach', 'Announcement', 'Announcement Expires'];
       for (const id of ids) document.getElementById(id).value = '';
       document.getElementById('Hide Events').checked = false;
+      document.getElementById('announcement-status').hidden = true;
+      document.getElementById('remove-announcement').hidden = true;
       setMediaPreview('thumbnail', '', 'Current banner:');
       setMediaPreview('flyer', '', 'Current flyer:');
       document.getElementById('draft-context').value = '';
@@ -356,6 +360,22 @@
         document.getElementById('TeamReach').value = club.teamReach || '';
         document.getElementById('Announcement').value = club.announcement || '';
         document.getElementById('Announcement Expires').value = club.announcementExpires || '';
+        const annStatus = document.getElementById('announcement-status');
+        const removeBtn = document.getElementById('remove-announcement');
+        if (club.announcement) {
+          annStatus.hidden = false;
+          removeBtn.hidden = false;
+          if (club.announcementActive) {
+            annStatus.style.color = 'var(--success, #2a7d4f)';
+            annStatus.textContent = '✅ Currently visible to members.';
+          } else {
+            annStatus.style.color = 'var(--danger, #b91c1c)';
+            annStatus.textContent = '⛔ Expired — not showing to members.';
+          }
+        } else {
+          annStatus.hidden = true;
+          removeBtn.hidden = true;
+        }
         document.getElementById('Hide Events').checked = !!club.hideEvents;
         setMediaPreview('thumbnail', club.thumbnail, 'Current banner:');
         setMediaPreview('flyer', club.promoFlyer, 'Current flyer:');
@@ -696,6 +716,24 @@
       try {
         await ClubsAPI.leaderUpdate({ slug, submitter_email, fields });
         setStatus('success', 'Saved! Your changes are live.');
+      } catch (err) {
+        setStatus('error', err.message);
+      }
+    });
+
+    // Remove announcement — clears both the text and expiry date immediately.
+    document.getElementById('remove-announcement').addEventListener('click', async () => {
+      const slug = $('#slug').value.trim();
+      const submitter_email = $('#submitter_email').value.trim();
+      if (!slug || !submitter_email) return;
+      setStatus('success', 'Removing announcement…');
+      try {
+        await ClubsAPI.leaderUpdate({ slug, submitter_email, fields: { 'Announcement': '', 'Announcement Expires': null } });
+        document.getElementById('Announcement').value = '';
+        document.getElementById('Announcement Expires').value = '';
+        document.getElementById('announcement-status').hidden = true;
+        document.getElementById('remove-announcement').hidden = true;
+        setStatus('success', 'Announcement removed.');
       } catch (err) {
         setStatus('error', err.message);
       }
