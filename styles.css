@@ -785,6 +785,15 @@ button, .btn {
   border: 2px solid var(--primary-color);
 }
 
+/* Prominent "full calendar" call-to-action under the hero on the landing page. */
+.calendar-cta { text-align: center; margin: 1.25rem 0 1.75rem; }
+.calendar-cta .btn {
+  display: inline-block;
+  font-size: 1.1rem;
+  padding: 1rem 1.85rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+}
+
 .breadcrumb {
   margin-bottom: 1rem;
   font-size: 0.95rem;

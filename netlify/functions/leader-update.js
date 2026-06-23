@@ -67,6 +67,12 @@ export async function handler(event) {
     return json(400, { error: 'No allowed fields supplied' });
   }
 
+  // Stamp "Last Updated". In the old shared base this was an auto Last-Modified-
+  // Time field, but that type isn't creatable via the Airtable API, so the
+  // club-run base uses a plain dateTime we set on each save. Keeps the landing
+  // page's "recently updated" section accurate as leaders edit.
+  safeFields['Last Updated'] = new Date().toISOString();
+
   // typecast lets Airtable coerce string values into singleSelect /
   // multipleSelects options — creating new options on the fly when a
   // leader adds a tag we haven't seen before. Without this, an unknown
