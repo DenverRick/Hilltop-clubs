@@ -11,6 +11,15 @@
   <meta name="apple-mobile-web-app-title" content="Hilltop Clubs" />
   <title>Update My Club</title>
   <link rel="stylesheet" href="/styles.css" />
+  <style>
+    /* RSVP setup section (talks to the separate RSVP app). */
+    .rsvp-setup { border: 1px solid var(--border, #d9dee5); border-radius: 8px; padding: 12px 14px; margin: 14px 0; background: #f7f9fc; }
+    .rsvp-setup > summary { cursor: pointer; font-size: 1rem; }
+    .rsvp-block { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border, #e3e8ef); }
+    .rsvp-block-title { font-weight: 600; margin-bottom: 6px; }
+    .rsvp-help { margin: 6px 0; }
+    .rsvp-help > summary { cursor: pointer; }
+  </style>
 </head>
 <body>
   <header class="site-header">
@@ -147,6 +156,55 @@
       <label>Member count (optional)
         <input id="Member Count" type="number" min="0" />
       </label>
+
+      <!-- RSVP setup. Talks to the separate RSVP app via /api/leader-rsvp-setup.
+           Collapsed by default; opening it provisions this club's RSVP record. -->
+      <details class="rsvp-setup">
+        <summary><strong>📋 RSVP — collect attendance</strong> <span class="optional-tag">(optional)</span></summary>
+        <p class="field-hint" style="margin-top:8px;">
+          Instead of email/TeamReach replies, send members a one-tap RSVP link and watch a live
+          headcount. Set this up once, then manage events from your RSVP dashboard.
+        </p>
+        <div id="rsvp-status" class="form-status" hidden></div>
+
+        <div class="rsvp-block">
+          <div class="rsvp-block-title">1. Your members</div>
+          <label>Paste member email addresses (any separator — commas, spaces, or one per line)
+            <textarea id="rsvp-emails" rows="4" placeholder="alice@example.com, bob@example.com&#10;carol@example.com"></textarea>
+          </label>
+          <button class="btn btn-secondary" id="rsvp-import-btn" type="button">Import members</button>
+          <div id="rsvp-import-status" class="form-status" hidden></div>
+        </div>
+
+        <div class="rsvp-block">
+          <div class="rsvp-block-title">2. Your club's sending email</div>
+          <p class="field-hint" id="rsvp-sending-state">Invites send from this address. Required before you can send.</p>
+          <label>Club Gmail address
+            <input id="rsvp-gmail" type="email" inputmode="email" placeholder="yourclub@gmail.com" />
+          </label>
+          <label>Gmail App Password
+            <input id="rsvp-app-password" type="password" autocomplete="off" placeholder="16-character app password" />
+          </label>
+          <details class="rsvp-help">
+            <summary class="field-hint">How do I get an App Password?</summary>
+            <ol class="field-hint" style="margin:6px 0 0; padding-left:18px;">
+              <li>Sign in to your club's Gmail, then turn on <strong>2-Step Verification</strong>
+                  (Google Account → Security).</li>
+              <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">myaccount.google.com/apppasswords</a>,
+                  create one named "RSVP", and copy the 16-character code.</li>
+              <li>Paste it above and save. We store it encrypted — never in plain text.</li>
+            </ol>
+          </details>
+          <button class="btn btn-secondary" id="rsvp-save-creds-btn" type="button">Save sending email</button>
+          <div id="rsvp-creds-status" class="form-status" hidden></div>
+        </div>
+
+        <div class="rsvp-block" id="rsvp-dashboard-block" hidden>
+          <div class="rsvp-block-title">3. Your RSVP dashboard</div>
+          <p class="field-hint">Set your event and send invites here (bookmark it):</p>
+          <a id="rsvp-dashboard-link" href="#" target="_blank" rel="noopener">Open my RSVP dashboard ↗</a>
+        </div>
+      </details>
 
       <label>Thumbnail image (replaces your current banner — JPEG, PNG, or WebP, max 5 MB)
         <div id="thumbnail-preview" class="current-media" hidden>
@@ -744,6 +802,101 @@
     $('#cancel-top').addEventListener('click', onCancel);
     $('#cancel-edit-top').addEventListener('click', onCancel);
     $('#cancel-bottom').addEventListener('click', onCancel);
+
+    // --- RSVP setup section -----------------------------------------------
+    // Talks to the separate RSVP app via /api/leader-rsvp-setup. Opening the
+    // panel provisions this club's RSVP record (find-or-create) and loads state.
+    const rsvpDetails = document.querySelector('details.rsvp-setup');
+    let rsvpLoaded = false;
+    function setRsvpStatus(id, kind, message) {
+      const el = document.getElementById(id);
+      if (!message) { el.hidden = true; return; }
+      el.hidden = false;
+      el.className = `form-status ${kind}`;
+      el.textContent = message;
+    }
+    function rsvpRender(data) {
+      const sendEl = document.getElementById('rsvp-sending-state');
+      if (data.hasGmailPassword) {
+        sendEl.textContent = `✅ Sending from ${data.gmailUser}. You're ready to send invites.`;
+        sendEl.style.color = 'var(--success, #2a7d4f)';
+      } else {
+        sendEl.textContent = "⚠️ Sending is disabled until you add your club's Gmail App Password below.";
+        sendEl.style.color = 'var(--danger, #b91c1c)';
+      }
+      const gmailInput = document.getElementById('rsvp-gmail');
+      if (data.gmailUser && !gmailInput.value) gmailInput.value = data.gmailUser;
+      if (data.dashboardUrl) {
+        document.getElementById('rsvp-dashboard-block').hidden = false;
+        document.getElementById('rsvp-dashboard-link').href = data.dashboardUrl;
+      }
+    }
+    async function rsvpRefresh() {
+      const slug = $('#slug').value.trim();
+      const submitter_email = $('#submitter_email').value.trim();
+      if (!slug || !submitter_email) return;
+      setRsvpStatus('rsvp-status', 'success', 'Loading…');
+      try {
+        const data = await ClubsAPI.leaderRsvpSetup({ slug, submitter_email, action: 'status' });
+        rsvpRender(data);
+        setRsvpStatus('rsvp-status', 'success', '');
+      } catch (err) {
+        setRsvpStatus('rsvp-status', 'error', err.message);
+      }
+    }
+    rsvpDetails.addEventListener('toggle', () => {
+      if (rsvpDetails.open && !rsvpLoaded) { rsvpLoaded = true; rsvpRefresh(); }
+    });
+    // Switching club / editing the slug invalidates the loaded RSVP state.
+    function rsvpReset() { rsvpLoaded = false; rsvpDetails.open = false; }
+    $('#club-search').addEventListener('input', rsvpReset);
+    $('#switch-club').addEventListener('click', rsvpReset);
+
+    document.getElementById('rsvp-import-btn').addEventListener('click', async () => {
+      const slug = $('#slug').value.trim();
+      const submitter_email = $('#submitter_email').value.trim();
+      const emails = document.getElementById('rsvp-emails').value.trim();
+      if (!slug || !submitter_email) { setRsvpStatus('rsvp-import-status', 'error', 'Log in first.'); return; }
+      if (!emails) { setRsvpStatus('rsvp-import-status', 'error', 'Paste some email addresses first.'); return; }
+      const btn = document.getElementById('rsvp-import-btn');
+      btn.disabled = true;
+      setRsvpStatus('rsvp-import-status', 'success', 'Importing…');
+      try {
+        const r = await ClubsAPI.leaderRsvpSetup({ slug, submitter_email, action: 'import', emails });
+        const parts = [`Added ${r.added}`];
+        if (r.skippedDuplicates) parts.push(`skipped ${r.skippedDuplicates} already on the list`);
+        if (r.invalid) parts.push(`${r.invalid} not valid`);
+        setRsvpStatus('rsvp-import-status', 'success', parts.join(' · ') + '.');
+        document.getElementById('rsvp-emails').value = '';
+        rsvpRefresh();
+      } catch (err) {
+        setRsvpStatus('rsvp-import-status', 'error', err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('rsvp-save-creds-btn').addEventListener('click', async () => {
+      const slug = $('#slug').value.trim();
+      const submitter_email = $('#submitter_email').value.trim();
+      const gmailUser = document.getElementById('rsvp-gmail').value.trim();
+      const appPassword = document.getElementById('rsvp-app-password').value;
+      if (!slug || !submitter_email) { setRsvpStatus('rsvp-creds-status', 'error', 'Log in first.'); return; }
+      if (!gmailUser || !appPassword) { setRsvpStatus('rsvp-creds-status', 'error', 'Enter your club Gmail and its App Password.'); return; }
+      const btn = document.getElementById('rsvp-save-creds-btn');
+      btn.disabled = true;
+      setRsvpStatus('rsvp-creds-status', 'success', 'Saving…');
+      try {
+        await ClubsAPI.leaderRsvpSetup({ slug, submitter_email, action: 'credentials', gmailUser, appPassword });
+        document.getElementById('rsvp-app-password').value = '';
+        setRsvpStatus('rsvp-creds-status', 'success', `Saved — your club now sends from ${gmailUser}.`);
+        rsvpRefresh();
+      } catch (err) {
+        setRsvpStatus('rsvp-creds-status', 'error', err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
 
     populateClubs().then(initSavedLogin);
   </script>

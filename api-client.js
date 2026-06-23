@@ -48,5 +48,6 @@
     leaderUploadFlyer: (payload) => postJSON('/api/leader-upload-flyer', payload),
     leaderRemoveImage: (payload) => postJSON('/api/leader-remove-image', payload),
     leaderDraftEmail: (payload) => postJSON('/api/leader-draft-email', payload),
+    leaderRsvpSetup: (payload) => postJSON('/api/leader-rsvp-setup', payload),
   };
 })();
