@@ -1,9 +1,8 @@
 // Returns the NEXT upcoming Senior Geeks presentation for the "dynamic
 // lightbulb hero" on the Senior Geeks club page. Reads the SEPARATE
 // "Senior Geeks" Airtable base (the same data source as hilltopseniorgeeks.org),
-// not the Clubs base — so it mirrors get-mpr-today.js: reuse AIRTABLE_TOKEN
-// (must have read access to this base) and override the base/table with env
-// vars if they ever move.
+// not the Clubs base — so it reuses AIRTABLE_TOKEN (which must have read access
+// to this base) and overrides the base/table with env vars if they ever move.
 //
 // Read-only. Fails SOFT: on any missing-env / API error it returns
 // { next: null } with a 200 so the hero simply shows its static fallback —

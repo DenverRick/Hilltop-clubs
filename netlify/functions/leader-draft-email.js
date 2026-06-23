@@ -117,6 +117,8 @@ export async function handler(event) {
     baseId: e.baseId,
     token: e.token,
     tableClubs: e.tableClubs,
+    tableClubEvents: e.tableClubEvents,
+    tableEventOverrides: e.tableEventOverrides,
     clubRecord,
   });
   const nextEvent = eventsResult.ok && eventsResult.events.length ? eventsResult.events[0] : null;

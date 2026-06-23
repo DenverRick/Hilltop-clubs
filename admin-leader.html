@@ -19,6 +19,20 @@
     .rsvp-block-title { font-weight: 600; margin-bottom: 6px; }
     .rsvp-help { margin: 6px 0; }
     .rsvp-help > summary { cursor: pointer; }
+    /* Club-run meeting events manager */
+    .events-mgr { border: 1px solid var(--border, #d9dee5); border-radius: 8px; padding: 12px 14px; margin: 14px 0; background: #f7f9fc; }
+    .events-mgr-head { font-weight: 700; font-size: 1.05rem; margin-bottom: 4px; }
+    .evm-list { margin: 10px 0; }
+    .evm-item { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--border, #e3e8ef); }
+    .evm-item:last-child { border-bottom: none; }
+    .evm-item-name { font-weight: 600; }
+    .evm-item-meta { font-size: 0.85rem; color: #555; }
+    .evm-item-cancels { font-size: 0.8rem; color: #b91c1c; margin-top: 2px; }
+    .evm-item-actions { display: flex; flex-wrap: wrap; gap: 4px; flex-shrink: 0; }
+    .evm-del { color: #b91c1c; }
+    .evm-form { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border, #e3e8ef); }
+    .evm-form-title { font-weight: 600; margin-bottom: 6px; }
+    .evm-form-actions { display: flex; gap: 6px; margin-top: 6px; }
   </style>
 </head>
 <body>
@@ -156,6 +170,71 @@
       <label>Member count (optional)
         <input id="Member Count" type="number" min="0" />
       </label>
+
+      <!-- Club-run meeting events. Leaders manage their own recurring meetings
+           and one-off events here; writes go to the club-owned base via
+           /api/leader-events and show on /calendar + the club page immediately. -->
+      <section class="events-mgr" id="events-mgr">
+        <div class="events-mgr-head">📅 Your meetings &amp; events</div>
+        <p class="field-hint">These drive your club's spot on the calendar and your club page. Recurring meetings repeat on their own; add one-offs for special events, and use "Cancel a date" to skip a single week.</p>
+        <div id="evm-list" class="evm-list"><div class="field-hint">Log in to load your events.</div></div>
+        <div id="evm-status" class="form-status" hidden></div>
+
+        <div class="evm-form" id="evm-form">
+          <div class="evm-form-title" id="evm-form-title">Add a meeting or event</div>
+          <input type="hidden" id="evm-edit-id" />
+          <label>Type
+            <select id="evm-type">
+              <option value="Recurring">Recurring meeting</option>
+              <option value="One-off">One-off event</option>
+            </select>
+          </label>
+          <label>Event name
+            <input id="evm-name" type="text" placeholder="e.g. Bridge Club" />
+          </label>
+          <div id="evm-recurring-fields">
+            <label>Day
+              <select id="evm-day">
+                <option value=""></option>
+                <option>Sunday</option><option>Monday</option><option>Tuesday</option>
+                <option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option>
+              </select>
+            </label>
+            <label>Repeats
+              <select id="evm-recurrence">
+                <option value=""></option>
+                <option>Weekly</option><option>Every other</option>
+                <option>1st</option><option>2nd</option><option>3rd</option><option>4th</option><option>Last</option>
+              </select>
+              <span class="field-hint">"1st"–"Last" mean that weekday each month (e.g. "1st" = first Monday).</span>
+            </label>
+            <label id="evm-refdate-label" hidden>Reference date (anchors the every-other cycle)
+              <input id="evm-refdate" type="date" />
+            </label>
+          </div>
+          <div id="evm-oneoff-fields" hidden>
+            <label>Date
+              <input id="evm-date" type="date" />
+            </label>
+          </div>
+          <label>Start time
+            <input id="evm-start" type="text" placeholder="7:00 PM" />
+          </label>
+          <label>End time (optional)
+            <input id="evm-end" type="text" placeholder="8:30 PM" />
+          </label>
+          <label>Location
+            <input id="evm-location" type="text" placeholder="M1 &amp; Kitchen" />
+          </label>
+          <label>Note (optional)
+            <input id="evm-note" type="text" placeholder="e.g. Bring a snack to share" />
+          </label>
+          <div class="evm-form-actions">
+            <button class="btn btn-primary btn-small" id="evm-save" type="button">Add event</button>
+            <button class="btn btn-secondary btn-small" id="evm-cancel-edit" type="button" hidden>Cancel edit</button>
+          </div>
+        </div>
+      </section>
 
       <!-- RSVP setup. Talks to the separate RSVP app via /api/leader-rsvp-setup.
            Collapsed by default; opening it provisions this club's RSVP record. -->
@@ -481,6 +560,8 @@
         await loadCurrentValues(slug);
         revealEditSection(res.name);
         rememberLogin(slug, submitter_email);
+        evmResetForm();
+        evmLoad();
       } catch (err) {
         setLoginStatus('error', err.message);
       } finally {
@@ -504,6 +585,8 @@
       $('#submitter_email').value = '';
       collapseToLogin();
       setLoginStatus('success', '');
+      evmResetForm();
+      $('#evm-list').innerHTML = '<div class="field-hint">Log in to load your events.</div>';
     });
 
     // Current-image previews for the banner + flyer uploads. Populated from the
@@ -896,6 +979,163 @@
       } finally {
         btn.disabled = false;
       }
+    });
+
+    // --- Club-run meeting events ------------------------------------------
+    // Manages the leader's own ClubEvents + EventOverrides via /api/leader-events
+    // (the server enforces that they only touch their own club's rows).
+    function evmStatus(kind, msg) {
+      const el = $('#evm-status');
+      if (!msg) { el.hidden = true; return; }
+      el.hidden = false; el.className = `form-status ${kind}`; el.textContent = msg;
+    }
+    let evmEvents = [], evmOverrides = [];
+
+    function evmScheduleText(ev) {
+      if (ev['Event Type'] === 'One-off') return `One-off · ${ev['Event Date'] || '(no date)'}`;
+      const r = ev['Recurrence'] || '', day = ev['Day'] || '';
+      if (r === 'Weekly') return `Every ${day}`;
+      if (r === 'Every other') return `Every other ${day}`;
+      if (r) return `${r} ${day} of the month`;
+      return day || '(no schedule)';
+    }
+    function evmTimeText(ev) {
+      const s = ev['Start Time'] || '', e = ev['End Time'] || '';
+      return s ? (e ? `${s}–${e}` : s) : '';
+    }
+    function renderEvmList() {
+      const wrap = $('#evm-list');
+      if (!evmEvents.length) { wrap.innerHTML = '<div class="field-hint">No meetings yet. Add your first one below.</div>'; return; }
+      wrap.innerHTML = evmEvents.map((ev) => {
+        const cancels = evmOverrides
+          .filter((o) => o.eventId === ev.id && o['Override Type'] === 'Cancel')
+          .map((o) => o['Date']).filter(Boolean);
+        const meta = `${evmScheduleText(ev)}${evmTimeText(ev) ? ' · ' + evmTimeText(ev) : ''}${ev['Location'] ? ' · ' + ev['Location'] : ''}`;
+        return `<div class="evm-item" data-id="${ev.id}">
+          <div class="evm-item-main">
+            <div class="evm-item-name">${escAttr(ev['Event Name'] || '')}</div>
+            <div class="evm-item-meta">${escAttr(meta)}</div>
+            ${cancels.length ? `<div class="evm-item-cancels">Cancelled: ${cancels.map(escAttr).join(', ')}</div>` : ''}
+          </div>
+          <div class="evm-item-actions">
+            <button class="btn btn-secondary btn-small" data-act="edit" type="button">Edit</button>
+            ${ev['Event Type'] !== 'One-off' ? '<button class="btn btn-secondary btn-small" data-act="cancel-date" type="button">Cancel a date</button>' : ''}
+            <button class="btn btn-secondary btn-small evm-del" data-act="delete" type="button">Delete</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    async function evmLoad() {
+      const slug = $('#slug').value.trim(), submitter_email = $('#submitter_email').value.trim();
+      if (!slug || !submitter_email) return;
+      $('#evm-list').innerHTML = '<div class="field-hint">Loading…</div>';
+      try {
+        const r = await ClubsAPI.leaderEvents({ slug, submitter_email, action: 'list' });
+        evmEvents = r.events || []; evmOverrides = r.overrides || [];
+        renderEvmList();
+      } catch (err) {
+        $('#evm-list').innerHTML = `<div class="form-status error">${escAttr(err.message)}</div>`;
+      }
+    }
+    function evmTypeToggle() {
+      const t = $('#evm-type').value;
+      $('#evm-recurring-fields').hidden = t !== 'Recurring';
+      $('#evm-oneoff-fields').hidden = t !== 'One-off';
+      evmRefDateToggle();
+    }
+    function evmRefDateToggle() {
+      $('#evm-refdate-label').hidden = !($('#evm-type').value === 'Recurring' && $('#evm-recurrence').value === 'Every other');
+    }
+    function evmResetForm() {
+      $('#evm-edit-id').value = '';
+      for (const id of ['evm-name', 'evm-day', 'evm-recurrence', 'evm-refdate', 'evm-date', 'evm-start', 'evm-end', 'evm-location', 'evm-note']) {
+        document.getElementById(id).value = '';
+      }
+      $('#evm-type').value = 'Recurring';
+      $('#evm-form-title').textContent = 'Add a meeting or event';
+      $('#evm-save').textContent = 'Add event';
+      $('#evm-cancel-edit').hidden = true;
+      evmTypeToggle();
+    }
+    function evmFillForm(ev) {
+      $('#evm-edit-id').value = ev.id;
+      $('#evm-type').value = ev['Event Type'] || 'Recurring';
+      $('#evm-name').value = ev['Event Name'] || '';
+      $('#evm-day').value = ev['Day'] || '';
+      $('#evm-recurrence').value = ev['Recurrence'] || '';
+      $('#evm-refdate').value = ev['Recurrence Reference Date'] || '';
+      $('#evm-date').value = ev['Event Date'] || '';
+      $('#evm-start').value = ev['Start Time'] || '';
+      $('#evm-end').value = ev['End Time'] || '';
+      $('#evm-location').value = ev['Location'] || '';
+      $('#evm-note').value = ev['Default Note'] || '';
+      $('#evm-form-title').textContent = 'Edit event';
+      $('#evm-save').textContent = 'Save changes';
+      $('#evm-cancel-edit').hidden = false;
+      evmTypeToggle();
+      $('#evm-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    $('#evm-type').addEventListener('change', evmTypeToggle);
+    $('#evm-recurrence').addEventListener('change', evmRefDateToggle);
+    $('#evm-cancel-edit').addEventListener('click', evmResetForm);
+
+    $('#evm-list').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-act]');
+      if (!btn) return;
+      const id = btn.closest('.evm-item').getAttribute('data-id');
+      const ev = evmEvents.find((x) => x.id === id);
+      if (!ev) return;
+      const slug = $('#slug').value.trim(), submitter_email = $('#submitter_email').value.trim();
+      const act = btn.getAttribute('data-act');
+      if (act === 'edit') { evmFillForm(ev); return; }
+      if (act === 'delete') {
+        if (!confirm(`Delete "${ev['Event Name']}"? It will stop showing on the calendar.`)) return;
+        evmStatus('success', 'Deleting…');
+        try { await ClubsAPI.leaderEvents({ slug, submitter_email, action: 'delete', id }); evmStatus('success', ''); await evmLoad(); }
+        catch (err) { evmStatus('error', err.message); }
+      }
+      if (act === 'cancel-date') {
+        const date = prompt('Cancel this meeting on which date? (YYYY-MM-DD)');
+        if (!date) return;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { evmStatus('error', 'Please use the format YYYY-MM-DD.'); return; }
+        evmStatus('success', 'Saving…');
+        try {
+          await ClubsAPI.leaderEvents({ slug, submitter_email, action: 'override', eventId: id, fields: { Date: date, 'Override Type': 'Cancel', Name: `Cancel ${ev['Event Name']} ${date}` } });
+          evmStatus('success', ''); await evmLoad();
+        } catch (err) { evmStatus('error', err.message); }
+      }
+    });
+
+    $('#evm-save').addEventListener('click', async () => {
+      const slug = $('#slug').value.trim(), submitter_email = $('#submitter_email').value.trim();
+      if (!slug || !submitter_email) { evmStatus('error', 'Log in first.'); return; }
+      const type = $('#evm-type').value;
+      const fields = {
+        'Event Name': $('#evm-name').value.trim(),
+        'Event Type': type,
+        'Start Time': $('#evm-start').value.trim(),
+        'End Time': $('#evm-end').value.trim(),
+        'Location': $('#evm-location').value.trim(),
+        'Default Note': $('#evm-note').value.trim(),
+      };
+      if (type === 'Recurring') {
+        fields['Day'] = $('#evm-day').value;
+        fields['Recurrence'] = $('#evm-recurrence').value;
+        if ($('#evm-recurrence').value === 'Every other') fields['Recurrence Reference Date'] = $('#evm-refdate').value;
+      } else {
+        fields['Event Date'] = $('#evm-date').value;
+      }
+      const editId = $('#evm-edit-id').value;
+      $('#evm-save').disabled = true;
+      evmStatus('success', editId ? 'Saving…' : 'Adding…');
+      try {
+        if (editId) await ClubsAPI.leaderEvents({ slug, submitter_email, action: 'update', id: editId, fields });
+        else await ClubsAPI.leaderEvents({ slug, submitter_email, action: 'create', fields });
+        evmStatus('success', 'Saved.');
+        evmResetForm();
+        await evmLoad();
+      } catch (err) { evmStatus('error', err.message); }
+      finally { $('#evm-save').disabled = false; }
     });
 
     populateClubs().then(initSavedLogin);

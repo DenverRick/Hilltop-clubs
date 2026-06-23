@@ -1,6 +1,5 @@
-// Returns upcoming meetings for a single club, expanded from the Calendar
-// app's recurring MeetingSlots and adjusted for any WeekOverrides (cancels /
-// per-week changes) in published weeks.
+// Returns upcoming meetings for a single club, expanded from the club's own
+// ClubEvents (recurring + one-offs) with any per-date EventOverrides applied.
 //
 // All compute is delegated to _events.js so leader-draft-email.js can share
 // the same logic when picking "next upcoming event" for the AI prompt.
@@ -39,6 +38,8 @@ export async function handler(event) {
     baseId: e.baseId,
     token: e.token,
     tableClubs: e.tableClubs,
+    tableClubEvents: e.tableClubEvents,
+    tableEventOverrides: e.tableEventOverrides,
     clubRecord,
   });
 
