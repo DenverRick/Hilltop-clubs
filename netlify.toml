@@ -41,6 +41,16 @@
   to = "/admin-leader.html"
   status = 200
 
+[[redirects]]
+  from = "/admin/leader/about"
+  to = "/admin-leader-about.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/leader/outreach"
+  to = "/admin-leader-outreach.html"
+  status = 200
+
 # API → Netlify functions
 [[redirects]]
   from = "/api/*"
