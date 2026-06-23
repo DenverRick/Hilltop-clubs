@@ -1,22 +1,16 @@
-// Shared helper: compute upcoming meeting occurrences for a given club record.
-// Used by get-club-events.js (public) and leader-draft-email.js (auth-gated).
+// Shared helper: compute club meeting occurrences from the club-run base.
 //
-// Sources of truth, all in the same Airtable base as Clubs:
-//   - MeetingSlots (recurring rules linked to Clubs)
-//   - Weeks        (gated by Status=Published)
-//   - WeekOverrides (per-week cancels / overrides)
+// Club-run model (no "published week" gating): club leaders keep their own
+// schedule current in the new base and it shows immediately. Sources, all in
+// the same base as Clubs:
+//   - ClubEvents     (recurring rules + one-offs, each linked to a Club)
+//   - EventOverrides (per-DATE cancel / edit for a specific occurrence)
+//
+// Output shape (EventRecord) is unchanged from the old engine, so the existing
+// rendering and add-to-calendar code reuse cleanly.
 
 import { airtableFetch } from './_airtable.js';
 import { expandRecurrence, fmt } from './_recurrence.js';
-
-const TABLE_MEETING_SLOTS = 'tblO3Vg7yoxioywpN';
-const TABLE_WEEKS = 'tbl2lRvniORa1XTAz';
-const TABLE_WEEK_OVERRIDES = 'tblSE0mTSYTSQiHMe';
-// The MPR "Events" table (in the separate Clubhouse base) — the Calendar app's
-// materialized, published schedule: real dated rows with overrides applied,
-// one-off events included, cancellations already removed. The authoritative
-// source for "what's actually happening this week."
-const TABLE_MPR_EVENTS = 'tblNmydBs6ZHPxrN9';
 
 // Parse a YYYY-MM-DD string as a LOCAL date (avoids the UTC-midnight shift that
 // `new Date("2026-06-04")` would introduce, which can land on the wrong day).
@@ -75,6 +69,8 @@ function formatDayLabel(date) {
   return `${DAY_LABELS_SHORT[date.getDay()]}, ${MONTH_LABELS_SHORT[date.getMonth()]} ${date.getDate()}`;
 }
 
+// Monday of the week containing `date`, as YYYY-MM-DD. Used to group the
+// calendar page into weeks (the model no longer gates on published weeks).
 function weekStartFor(date) {
   const d = new Date(date);
   const day = d.getDay();
@@ -83,268 +79,99 @@ function weekStartFor(date) {
   return fmt(d);
 }
 
-// --- Name matching --------------------------------------------------------
-// Most MeetingSlots don't carry an explicit Club link, so we fall back to
-// matching the slot's name to a club by significant words — mirroring the
-// Calendar app's club-match.js. Tokens drop punctuation and filler words
-// ("club", "the", "class", "group").
-const FILLER = new Set(['club', 'the', 'class', 'group', 'a', 'of', 'and']);
-function nameTokens(name) {
-  return new Set(
-    String(name || '')
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, ' ')
-      .split(/\s+/)
-      .filter((t) => t && !FILLER.has(t))
-  );
-}
-function isSubset(small, big) {
-  for (const t of small) if (!big.has(t)) return false;
-  return true;
-}
-// Build a name index over the opted-in clubs.
-function buildClubIndex(clubs) {
-  return clubs.map((c) => ({ ...c, tokens: nameTokens(c.name) }));
-}
-// Resolve an event name to one opted-in club. Exact token-set match wins;
-// otherwise a unique club whose distinctive words are all contained in the
-// event name (e.g. "Social Bridge" → "Bridge Club"). Ambiguous → null.
-function matchClubByName(eventName, clubIndex) {
-  const ev = nameTokens(eventName);
-  if (!ev.size) return null;
-  const key = [...ev].sort().join(' ');
-  // 1. exact token-set equality
-  for (const c of clubIndex) {
-    if (c.tokens.size && [...c.tokens].sort().join(' ') === key) return c;
-  }
-  // 2. unique club whose tokens ⊆ event tokens
-  const subs = clubIndex.filter((c) => c.tokens.size && isSubset(c.tokens, ev));
-  if (subs.length === 1) return subs[0];
-  return null;
-}
-
-/**
- * Read club meetings from the MPR "Events" table (the Calendar app's published,
- * materialized schedule) within a date window, name-matched to opted-in clubs.
- *
- * This is the source the landing-page Today/Tomorrow widget uses. It's more
- * accurate than recomputing from MeetingSlots: it already reflects per-week
- * overrides, one-off events, and cancellations exactly as published. Community
- * events (Coffee & Chat, exercise classes) are dropped because they don't
- * name-match any directory club. Clubs with Hide Events are excluded (they're
- * not in the index).
- *
- * @param {object} args
- * @param {string} args.baseId       Clubs base (for the club name index)
- * @param {string} args.token
- * @param {string} args.tableClubs
- * @param {string} args.mprBaseId    Clubhouse base holding the Events table
- * @param {Date} args.windowStart
- * @param {Date} args.windowEnd
- * @returns {Promise<{ ok: boolean, status?: number, error?: string, events?: Array }>}
- */
-export async function computeWeekClubEventsFromMpr({ baseId, token, tableClubs, mprBaseId, windowStart, windowEnd }) {
-  // 1. Opted-in clubs → name index.
-  const clubsRes = await airtableFetch(`${baseId}/${tableClubs}`, {
-    token,
-    query: { filterByFormula: `AND({Active} = TRUE(), NOT({Hide Events}))` },
-  });
-  if (!clubsRes.ok) return { ok: false, status: clubsRes.status, error: 'Airtable error fetching clubs' };
-  const clubList = (clubsRes.data.records || []).map((c) => ({
-    name: c.fields['Name'] || '',
-    slug: c.fields['Slug'] || '',
-  }));
-  if (!clubList.length) return { ok: true, events: [] };
-  const clubIndex = buildClubIndex(clubList);
-
-  // 2. Published MPR events (Active=true). Small table (~one week) — fetch and
-  //    filter by date in JS to avoid date-formula edge cases.
-  const evRes = await airtableFetch(`${mprBaseId}/${TABLE_MPR_EVENTS}`, {
-    token,
-    query: { filterByFormula: `{Active} = TRUE()` },
-  });
-  if (!evRes.ok) return { ok: false, status: evRes.status, error: 'Airtable error fetching MPR events' };
-
-  const startStr = fmt(windowStart);
-  const endStr = fmt(windowEnd);
-  const out = [];
-  for (const r of evRes.data.records || []) {
-    const f = r.fields;
-    const date = f['Date'];
-    if (!date || date < startStr || date > endStr) continue;
-    const club = matchClubByName(f['Name'], clubIndex);
-    if (!club) continue; // community event — not a directory club
-    out.push({
-      date,
-      dayLabel: formatDayLabel(parseLocalDate(date)),
-      startTime: f['Start'] || '',
-      endTime: f['End'] || '',
-      location: f['Room'] || '',
-      note: '',
-      eventName: f['Name'] || club.name,
-      clubName: club.name,
-      clubSlug: club.slug,
-      cancelled: false,
-    });
-  }
-  out.sort(byDateThenTime);
-  return { ok: true, events: out };
-}
-
-/**
- * Today/Tomorrow widget source. Union of:
- *   (a) ALL-ROOMS recurring club events from MeetingSlots (overrides applied,
- *       published-weeks gated) — the same engine the club pages use, so Library
- *       / Movement Studio / Pool meetings show, not just the MPR; plus
- *   (b) MPR-table events with no matching recurring occurrence — i.e. one-off
- *       specials that live only in the published MPR table (e.g. a Fun Club
- *       Trivia Night), which have no recurring slot.
- * Deduped on date|clubSlug|startTime. Recurring is authoritative (it has the
- * week's overrides); the MPR base is supplementary, so if only it errors we
- * still return the recurring set rather than blanking the widget.
- */
-export async function computeWeekClubEventsAllRooms({ baseId, token, tableClubs, mprBaseId, windowStart, windowEnd }) {
-  const recurring = await computeAllClubEvents({ baseId, token, tableClubs, windowStart, windowEnd });
-  if (!recurring.ok) return recurring;
-
-  const events = [...recurring.events];
-  const seen = new Set(events.map((e) => `${e.date}|${e.clubSlug}|${e.startTime}`));
-
-  const mpr = await computeWeekClubEventsFromMpr({ baseId, token, tableClubs, mprBaseId, windowStart, windowEnd });
-  if (mpr.ok) {
-    for (const e of mpr.events) {
-      const key = `${e.date}|${e.clubSlug}|${e.startTime}`;
-      if (!seen.has(key)) { seen.add(key); events.push(e); }
-    }
-  }
-
-  events.sort(byDateThenTime);
-  return { ok: true, events };
-}
-
 /**
  * Compute club meetings across ALL opted-in clubs within a date window.
- * (MeetingSlots-recurrence path — still used by the per-club "Upcoming
- * meetings" list on club pages, which projects further ahead than the MPR
- * table holds. The Today/Tomorrow widget uses computeWeekClubEventsFromMpr.)
- * Only clubs that are Active AND not Hide Events are included.
+ * Reads the club-run model: ClubEvents (recurring + one-off, each with a
+ * mandatory Club link) and EventOverrides (per-date cancel/edit). No published-
+ * week gating — whatever a leader has entered shows.
  *
  * @param {object} args
  * @param {string} args.baseId
  * @param {string} args.token
  * @param {string} args.tableClubs
+ * @param {string} args.tableClubEvents
+ * @param {string} args.tableEventOverrides
  * @param {Date} args.windowStart
  * @param {Date} args.windowEnd
  * @returns {Promise<{ ok: boolean, status?: number, error?: string, events?: Array }>}
  *   events include a `cancelled` flag (cancelled meetings are kept so the UI
  *   can show them struck-through rather than silently dropping them).
  */
-export async function computeAllClubEvents({ baseId, token, tableClubs, windowStart, windowEnd }) {
+export async function computeAllClubEvents({ baseId, token, tableClubs, tableClubEvents, tableEventOverrides, windowStart, windowEnd }) {
+  if (!tableClubEvents || !tableEventOverrides) {
+    return { ok: false, status: 500, error: 'ClubEvents/EventOverrides tables not configured' };
+  }
+
   // 1. Allowed clubs: Active and not opted out. Map recordId → {name, slug}.
   const clubsRes = await airtableFetch(`${baseId}/${tableClubs}`, {
     token,
-    query: {
-      filterByFormula: `AND({Active} = TRUE(), NOT({Hide Events}))`,
-    },
+    query: { filterByFormula: `AND({Active} = TRUE(), NOT({Hide Events}))` },
   });
   if (!clubsRes.ok) return { ok: false, status: clubsRes.status, error: 'Airtable error fetching clubs' };
   const clubById = new Map();
-  const clubList = [];
   for (const c of clubsRes.data.records || []) {
-    const club = { name: c.fields['Name'] || '', slug: c.fields['Slug'] || '' };
-    clubById.set(c.id, club);
-    clubList.push(club);
+    clubById.set(c.id, { name: c.fields['Name'] || '', slug: c.fields['Slug'] || '' });
   }
   if (!clubById.size) return { ok: true, events: [] };
-  const clubIndex = buildClubIndex(clubList);
 
-  // 2. All active MeetingSlots.
-  const slotsRes = await airtableFetch(`${baseId}/${TABLE_MEETING_SLOTS}`, {
+  // 2. All active ClubEvents.
+  const eventsRes = await airtableFetch(`${baseId}/${tableClubEvents}`, {
     token,
     query: { filterByFormula: `{Active} = TRUE()` },
   });
-  if (!slotsRes.ok) return { ok: false, status: slotsRes.status, error: 'Airtable error fetching slots' };
-  const slots = slotsRes.data.records || [];
+  if (!eventsRes.ok) return { ok: false, status: eventsRes.status, error: 'Airtable error fetching club events' };
+  const clubEvents = eventsRes.data.records || [];
 
-  // 3. Published weeks only. A published week is the finalized view — all its
-  //    overrides (cancellations, room/time changes, one-offs) are baked in.
-  //    Unpublished/draft weeks are excluded so the directory never shows a
-  //    meeting that hasn't been reviewed (e.g. one that's actually cancelled
-  //    but not yet marked). The recurring schedule still comes from
-  //    MeetingSlots; publish status just gates which weeks are shown.
-  const weekFloor = new Date(windowStart);
-  weekFloor.setDate(weekFloor.getDate() - 7);
-  const weeksRes = await airtableFetch(`${baseId}/${TABLE_WEEKS}`, {
-    token,
-    query: {
-      filterByFormula: `AND({Status} = 'Published', IS_AFTER({Week Start}, '${fmt(weekFloor)}'), IS_BEFORE({Week Start}, '${fmt(windowEnd)}'))`,
-    },
-  });
-  if (!weeksRes.ok) return { ok: false, status: weeksRes.status, error: 'Airtable error fetching weeks' };
-  const publishedWeekStarts = new Set();
-  const weekStartById = new Map();
-  (weeksRes.data.records || []).forEach((r) => {
-    const ws = r.fields['Week Start'];
-    if (ws) { publishedWeekStarts.add(ws); weekStartById.set(r.id, ws); }
-  });
-  if (!publishedWeekStarts.size) return { ok: true, events: [] };
-
-  // 4. Overrides — cancellations and per-week changes, applied where present.
-  const overridesRes = await airtableFetch(`${baseId}/${TABLE_WEEK_OVERRIDES}`, { token });
+  // 3. Overrides — per-date cancel/edit. Keyed eventId|date (no week gating).
+  const overridesRes = await airtableFetch(`${baseId}/${tableEventOverrides}`, { token });
   if (!overridesRes.ok) return { ok: false, status: overridesRes.status, error: 'Airtable error fetching overrides' };
-  const overrideMap = new Map(); // slotId|weekStart → fields
+  const overrideMap = new Map(); // eventId|YYYY-MM-DD → fields
   for (const o of overridesRes.data.records || []) {
-    const slotId = o.fields['Slot']?.[0];
-    const weekId = o.fields['Week']?.[0];
-    if (!slotId || !weekId) continue;
-    const ws = weekStartById.get(weekId);
-    if (ws) overrideMap.set(`${slotId}|${ws}`, o.fields);
+    const eventId = o.fields['Event']?.[0];
+    const date = String(o.fields['Date'] || '').slice(0, 10);
+    if (eventId && date) overrideMap.set(`${eventId}|${date}`, o.fields);
   }
 
-  // 5. Expand each slot, join its club + overrides.
+  const startStr = fmt(windowStart);
+  const endStr = fmt(windowEnd);
+
+  // 4. Expand each event, join its club + overrides.
   const occurrences = [];
-  for (const slot of slots) {
-    // Resolve the slot's club. If the slot has an explicit Club link, trust it:
-    // a link resolving to a club that ISN'T active/opted-in (e.g. "Chinese
-    // Mah-Jongg" linked to the pending "Mah-Jongg, Chinese") means skip it —
-    // do NOT fall through to name-matching, or it would mislabel onto a
-    // different active club ("Mah-Jongg Club"). Only un-linked slots use
-    // name-matching; community classes (Yoga, Tai Chi) match nothing and skip.
-    const linkedId = slot.fields['Club']?.[0];
-    let club;
-    if (linkedId) {
-      club = clubById.get(linkedId);
-      if (!club) continue; // linked to an inactive/hidden club — don't surface
-    } else {
-      club = matchClubByName(slot.fields['Event Name'], clubIndex);
-    }
+  for (const ev of clubEvents) {
+    // Club link is mandatory in the club-run model. Skip events whose club is
+    // inactive/hidden/missing (don't surface).
+    const club = clubById.get(ev.fields['Club']?.[0]);
     if (!club) continue;
 
-    const dates = expandRecurrence(
-      {
-        day: slot.fields['Day'],
-        recurrence: slot.fields['Recurrence'],
-        referenceDate: slot.fields['Recurrence Reference Date'],
-      },
-      windowStart,
-      windowEnd
-    );
+    // One-off: a single concrete Event Date. Recurring: expand the rule.
+    let dates;
+    if (ev.fields['Event Type'] === 'One-off') {
+      const d = String(ev.fields['Event Date'] || '').slice(0, 10);
+      dates = d && d >= startStr && d <= endStr ? [parseLocalDate(d)] : [];
+    } else {
+      dates = expandRecurrence(
+        {
+          day: ev.fields['Day'],
+          recurrence: ev.fields['Recurrence'],
+          referenceDate: ev.fields['Recurrence Reference Date'],
+        },
+        windowStart,
+        windowEnd
+      );
+    }
 
     for (const date of dates) {
-      const ws = weekStartFor(date);
-      if (!publishedWeekStarts.has(ws)) continue; // only finalized weeks
-
-      const override = overrideMap.get(`${slot.id}|${ws}`);
+      const override = overrideMap.get(`${ev.id}|${fmt(date)}`);
       const cancelled = override?.['Override Type'] === 'Cancel';
 
       occurrences.push({
         date: fmt(date),
         dayLabel: formatDayLabel(date),
-        startTime: override?.['Start Time'] || slot.fields['Start Time'] || '',
-        endTime: override?.['End Time'] || slot.fields['End Time'] || '',
-        location: override?.['Location'] || slot.fields['Location'] || '',
-        note: override?.['Note'] || slot.fields['Default Note'] || '',
-        eventName: slot.fields['Event Name'] || club.name,
+        startTime: override?.['Start Time'] || ev.fields['Start Time'] || '',
+        endTime: override?.['End Time'] || ev.fields['End Time'] || '',
+        location: override?.['Location'] || ev.fields['Location'] || '',
+        note: override?.['Note'] || ev.fields['Default Note'] || '',
+        eventName: ev.fields['Event Name'] || club.name,
         clubName: club.name,
         clubSlug: club.slug,
         cancelled,
@@ -357,19 +184,19 @@ export async function computeAllClubEvents({ baseId, token, tableClubs, windowSt
 }
 
 /**
- * Compute upcoming meeting occurrences for a single club, over a 28-day
- * window. Built on top of computeAllClubEvents so it inherits the same
- * link-or-name-match resolution — a club whose MeetingSlot has no explicit
- * Club link still gets its meetings via name matching.
+ * Compute upcoming meeting occurrences for a single club, over a 28-day window.
+ * Built on computeAllClubEvents (so it inherits the club-run model).
  *
  * @param {object} args
  * @param {string} args.baseId
  * @param {string} args.token
  * @param {string} args.tableClubs
+ * @param {string} args.tableClubEvents
+ * @param {string} args.tableEventOverrides
  * @param {object} args.clubRecord - the Airtable record (with .fields.Slug)
  * @returns {Promise<{ ok: boolean, status?: number, error?: string, events?: Array }>}
  */
-export async function computeUpcomingEvents({ baseId, token, tableClubs, clubRecord }) {
+export async function computeUpcomingEvents({ baseId, token, tableClubs, tableClubEvents, tableEventOverrides, clubRecord }) {
   const slug = clubRecord.fields['Slug'];
   if (!slug) return { ok: true, events: [] };
 
@@ -378,7 +205,7 @@ export async function computeUpcomingEvents({ baseId, token, tableClubs, clubRec
   const windowEnd = new Date(today);
   windowEnd.setDate(windowEnd.getDate() + WINDOW_DAYS);
 
-  const all = await computeAllClubEvents({ baseId, token, tableClubs, windowStart: today, windowEnd });
+  const all = await computeAllClubEvents({ baseId, token, tableClubs, tableClubEvents, tableEventOverrides, windowStart: today, windowEnd });
   if (!all.ok) return all;
 
   // Per-club view hides cancelled meetings (the all-clubs feed keeps them for
@@ -387,4 +214,44 @@ export async function computeUpcomingEvents({ baseId, token, tableClubs, clubRec
     .filter((e) => e.clubSlug === slug && !e.cancelled)
     .slice(0, MAX_OCCURRENCES);
   return { ok: true, events };
+}
+
+/**
+ * Calendar-page source: all club meetings over the next `weeks` weeks, grouped
+ * by Monday-start week. The window floor is the Monday of the current week so
+ * the page shows the whole current week (including meetings earlier this week).
+ *
+ * @param {object} args - baseId, token, tableClubs, tableClubEvents, tableEventOverrides
+ * @param {number} [args.weeks=6]
+ * @returns {Promise<{ ok: boolean, status?: number, error?: string, weeks?: Array, today?: string }>}
+ *   weeks: [{ weekStart: 'YYYY-MM-DD', label: 'Jun 22 – Jun 28', events: [...] }]
+ */
+export async function computeCalendarWeeks({ baseId, token, tableClubs, tableClubEvents, tableEventOverrides, weeks = 6 }) {
+  const { ymd: today } = todayDenver();
+  const windowStart = parseLocalDate(weekStartFor(todayDenver().date)); // Monday of current week
+  const windowEnd = new Date(windowStart);
+  windowEnd.setDate(windowEnd.getDate() + weeks * 7 - 1); // inclusive last day
+
+  const all = await computeAllClubEvents({ baseId, token, tableClubs, tableClubEvents, tableEventOverrides, windowStart, windowEnd });
+  if (!all.ok) return all;
+
+  // Pre-seed every week in the window so empty weeks still render a header.
+  const byWeek = new Map();
+  for (let i = 0; i < weeks; i++) {
+    const ws = new Date(windowStart);
+    ws.setDate(ws.getDate() + i * 7);
+    const wsStr = fmt(ws);
+    const wEnd = new Date(ws);
+    wEnd.setDate(wEnd.getDate() + 6);
+    const label = `${MONTH_LABELS_SHORT[ws.getMonth()]} ${ws.getDate()} – ${MONTH_LABELS_SHORT[wEnd.getMonth()]} ${wEnd.getDate()}`;
+    byWeek.set(wsStr, { weekStart: wsStr, label, events: [] });
+  }
+  for (const ev of all.events) {
+    const ws = weekStartFor(parseLocalDate(ev.date));
+    const bucket = byWeek.get(ws);
+    if (bucket) bucket.events.push(ev);
+  }
+
+  const out = [...byWeek.values()].sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+  return { ok: true, weeks: out, today };
 }

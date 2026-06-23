@@ -46,10 +46,15 @@ export function env() {
   const baseId = process.env.AIRTABLE_BASE_ID;
   const tableClubs = process.env.AIRTABLE_TABLE_CLUBS;
   const tableCategories = process.env.AIRTABLE_TABLE_CATEGORIES;
+  // Club-run event model (new base). Not in the required guard below so the
+  // club/category functions still work if these are ever unset; the event
+  // functions validate them on their own.
+  const tableClubEvents = process.env.AIRTABLE_TABLE_CLUB_EVENTS;
+  const tableEventOverrides = process.env.AIRTABLE_TABLE_EVENT_OVERRIDES;
   if (!token || !baseId || !tableClubs || !tableCategories) {
     return { error: json(500, { error: 'Server configuration error' }) };
   }
-  return { token, baseId, tableClubs, tableCategories };
+  return { token, baseId, tableClubs, tableCategories, tableClubEvents, tableEventOverrides };
 }
 
 export async function airtableFetch(path, { token, method = 'GET', body, query } = {}) {

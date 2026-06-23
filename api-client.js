@@ -39,7 +39,7 @@
     getClub: (slug) => getJSON(`/api/get-club?slug=${encodeURIComponent(slug)}`),
     getClubEvents: (slug) => getJSON(`/api/get-club-events?slug=${encodeURIComponent(slug)}`),
     getWeekEvents: () => getJSON('/api/get-week-events'),
-    getMprToday: () => getJSON('/api/get-mpr-today'),
+    getCalendarEvents: (weeks) => getJSON('/api/get-calendar-events' + (weeks ? `?weeks=${encodeURIComponent(weeks)}` : '')),
     getSeniorGeeksNext: () => getJSON('/api/get-senior-geeks-next'),
     getClubMailto: (slug) => getJSON(`/api/get-club-mailto?slug=${encodeURIComponent(slug)}`),
     leaderVerify: (payload) => postJSON('/api/leader-verify', payload),
@@ -49,5 +49,6 @@
     leaderRemoveImage: (payload) => postJSON('/api/leader-remove-image', payload),
     leaderDraftEmail: (payload) => postJSON('/api/leader-draft-email', payload),
     leaderRsvpSetup: (payload) => postJSON('/api/leader-rsvp-setup', payload),
+    leaderEvents: (payload) => postJSON('/api/leader-events', payload),
   };
 })();
