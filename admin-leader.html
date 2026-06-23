@@ -466,6 +466,7 @@
         'External Website', 'TeamReach', 'Announcement', 'Announcement Expires'];
       for (const id of ids) document.getElementById(id).value = '';
       document.getElementById('Hide Events').checked = false;
+      evmClubDefaults = { name: '', day: '', time: '', location: '' };
       document.getElementById('announcement-status').hidden = true;
       document.getElementById('remove-announcement').hidden = true;
       setMediaPreview('thumbnail', '', 'Current banner:');
@@ -488,6 +489,13 @@
         document.getElementById('Meeting Time').value = club.meetingTime || '';
         document.getElementById('Meeting Location').value = club.meetingLocation || '';
         document.getElementById('Member Count').value = club.memberCount ?? '';
+        // Remember the club's saved meeting info to pre-fill a new recurring event.
+        evmClubDefaults = {
+          name: club.name || '',
+          day: club.meetingDay || '',
+          time: club.meetingTime || '',
+          location: club.meetingLocation || '',
+        };
         document.getElementById('YouTube URLs').value = (club.youtubeUrls || []).join('\n');
         // Airtable accepts schemeless URLs (e.g. "www.foo.org") but the HTML5
         // url input doesn't — prefix https:// so the field validates on save.
@@ -990,6 +998,10 @@
       el.hidden = false; el.className = `form-status ${kind}`; el.textContent = msg;
     }
     let evmEvents = [], evmOverrides = [];
+    // The logged-in club's saved meeting info, used to pre-fill a new recurring
+    // event (set in loadCurrentValues, cleared in clearFormFields).
+    let evmClubDefaults = { name: '', day: '', time: '', location: '' };
+    const EVM_WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     function evmScheduleText(ev) {
       if (ev['Event Type'] === 'One-off') return `One-off · ${ev['Event Date'] || '(no date)'}`;
@@ -1038,9 +1050,18 @@
       }
     }
     function evmTypeToggle() {
-      const t = $('#evm-type').value;
-      $('#evm-recurring-fields').hidden = t !== 'Recurring';
-      $('#evm-oneoff-fields').hidden = t !== 'One-off';
+      const recurring = $('#evm-type').value === 'Recurring';
+      $('#evm-recurring-fields').hidden = !recurring;
+      $('#evm-oneoff-fields').hidden = recurring;
+      // Clear whichever side is now hidden so switching modes leaves only the
+      // relevant fields — e.g. picking One-off clears the recurring fields.
+      if (recurring) {
+        $('#evm-date').value = '';
+      } else {
+        $('#evm-day').value = '';
+        $('#evm-recurrence').value = '';
+        $('#evm-refdate').value = '';
+      }
       evmRefDateToggle();
     }
     function evmRefDateToggle() {
@@ -1052,6 +1073,14 @@
         document.getElementById(id).value = '';
       }
       $('#evm-type').value = 'Recurring';
+      // Pre-fill the recurring fields from the club's saved meeting info so a
+      // leader usually just confirms. Day only if it maps to a weekday option
+      // (a "Varies"/blank profile day stays empty). One-off clears these.
+      $('#evm-name').value = evmClubDefaults.name || '';
+      $('#evm-recurrence').value = 'Weekly';
+      $('#evm-day').value = EVM_WEEKDAYS.includes(evmClubDefaults.day) ? evmClubDefaults.day : '';
+      $('#evm-start').value = evmClubDefaults.time || '';
+      $('#evm-location').value = evmClubDefaults.location || '';
       $('#evm-form-title').textContent = 'Add a meeting or event';
       $('#evm-save').textContent = 'Add event';
       $('#evm-cancel-edit').hidden = true;
