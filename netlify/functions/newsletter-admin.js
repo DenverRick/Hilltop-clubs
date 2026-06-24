@@ -8,8 +8,11 @@ import crypto from 'node:crypto';
 import { preflight, json, env, airtableFetch, CACHE } from './_airtable.js';
 
 const IMAGES_FIELD_ID = 'fldhsUSayTGpY9Ip7'; // Newsletter.Images attachment field
+const PROMO_FLYER_FIELD_ID = 'fldGm6YN2ibB3YkRM'; // Clubs.Promo Flyer (Club-Run base) — base-specific, see CLAUDE.md
 const ALLOWED = ['Title', 'Type', 'Body', 'Sort Order', 'Active'];
 const SELECT = ['Type']; // single-selects reject '' — drop empties for these
+const FLYER_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const FLYER_MAX_BYTES = 5 * 1024 * 1024; // 5 MB, matches leader-upload-flyer.js
 
 function sanitize(fields) {
   const out = {};
@@ -124,6 +127,79 @@ export async function handler(event) {
       const kept = (cur.data.fields['Images'] || []).filter((a) => a.id !== p.attachmentId).map((a) => ({ id: a.id }));
       const r = await airtableFetch(`${base}/${p.id}`, { token: e.token, method: 'PATCH', body: { fields: { Images: kept } } });
       if (!r.ok) return json(r.status, { error: 'Could not remove image', details: r.data });
+      return json(200, { ok: true });
+    }
+
+    // ---- Club flyers (Clubs table) ----------------------------------------
+    // The newsletter's "Club Flyers" section auto-mirrors each club's Promo
+    // Flyer, gated by the club's own "Flyer Active" toggle + optional "Flyer
+    // Expires" date (independent of the club's Active status). These actions let
+    // the editor manage that without opening Airtable.
+
+    case 'listClubFlyers': {
+      const r = await airtableFetch(`${e.baseId}/${e.tableClubs}`, { token: e.token });
+      if (!r.ok) return json(r.status, { error: 'Airtable error', details: r.data });
+      const clubs = (r.data.records || []).map((rec) => {
+        const f = rec.fields;
+        const flyer = (f['Promo Flyer'] || [])[0];
+        return {
+          id: rec.id,
+          name: f['Name'] || '',
+          slug: f['Slug'] || '',
+          active: !!f['Active'],
+          flyerUrl: flyer ? (flyer.thumbnails?.large?.url || flyer.url || '') : '',
+          flyerActive: !!f['Flyer Active'],
+          flyerExpires: String(f['Flyer Expires'] || '').slice(0, 10),
+        };
+      }).sort((a, b) => a.name.localeCompare(b.name));
+      return json(200, { clubs }, { 'Cache-Control': CACHE.NEVER });
+    }
+
+    case 'updateClubFlyer': {
+      if (!p.id) return json(400, { error: 'Missing club id' });
+      const fields = {};
+      if ('flyerActive' in p) fields['Flyer Active'] = !!p.flyerActive;
+      if ('flyerExpires' in p) fields['Flyer Expires'] = p.flyerExpires ? String(p.flyerExpires).slice(0, 10) : null;
+      if (!Object.keys(fields).length) return json(400, { error: 'Nothing to update' });
+      const r = await airtableFetch(`${e.baseId}/${e.tableClubs}/${p.id}`, { token: e.token, method: 'PATCH', body: { fields, typecast: true } });
+      if (!r.ok) return json(r.status, { error: `Update failed: ${r.data?.error?.message || r.status}` });
+      return json(200, { ok: true, id: p.id });
+    }
+
+    case 'uploadClubFlyer': {
+      if (!p.id || !p.fileBase64) return json(400, { error: 'Missing club id or file' });
+      if (!FLYER_TYPES.has(p.contentType)) return json(400, { error: 'Unsupported image type. Use JPEG, PNG, or WebP.' });
+      if (p.fileBase64.length * 0.75 > FLYER_MAX_BYTES) return json(400, { error: 'Flyer too large (max 5 MB).' });
+      // Append the new attachment, then trim to just the newest so the first
+      // (and only) attachment — what get-newsletter/get-club read — is current.
+      const up = await fetch(`https://content.airtable.com/v0/${e.baseId}/${p.id}/${PROMO_FLYER_FIELD_ID}/uploadAttachment`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${e.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentType: p.contentType, file: p.fileBase64, filename: p.filename || 'flyer' }),
+      });
+      const upText = await up.text();
+      let upData; try { upData = upText ? JSON.parse(upText) : {}; } catch { upData = null; }
+      if (!up.ok) return json(up.status, { error: `Upload failed: ${upData?.error?.message || up.status}` });
+      const cur = await airtableFetch(`${e.baseId}/${e.tableClubs}/${p.id}`, { token: e.token });
+      if (!cur.ok) return json(cur.status, { error: 'Airtable error', details: cur.data });
+      const atts = cur.data.fields['Promo Flyer'] || [];
+      const newest = atts[atts.length - 1];
+      // Keep only the newest attachment and turn the flyer on so it shows.
+      const r = await airtableFetch(`${e.baseId}/${e.tableClubs}/${p.id}`, {
+        token: e.token, method: 'PATCH',
+        body: { fields: { 'Promo Flyer': newest ? [{ id: newest.id }] : [], 'Flyer Active': true } },
+      });
+      if (!r.ok) return json(r.status, { error: 'Could not finalize flyer', details: r.data });
+      return json(200, { ok: true });
+    }
+
+    case 'removeClubFlyer': {
+      if (!p.id) return json(400, { error: 'Missing club id' });
+      const r = await airtableFetch(`${e.baseId}/${e.tableClubs}/${p.id}`, {
+        token: e.token, method: 'PATCH',
+        body: { fields: { 'Promo Flyer': [], 'Flyer Active': false } },
+      });
+      if (!r.ok) return json(r.status, { error: 'Could not remove flyer', details: r.data });
       return json(200, { ok: true });
     }
 

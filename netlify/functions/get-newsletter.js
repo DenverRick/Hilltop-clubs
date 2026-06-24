@@ -8,7 +8,7 @@
 // Leader Email is never read here.
 
 import { preflight, json, env, airtableFetch, CACHE } from './_airtable.js';
-import { isAnnouncementActive } from './_events.js';
+import { isAnnouncementActive, isFlyerActive } from './_events.js';
 
 export async function handler(event) {
   const pre = preflight(event);
@@ -34,11 +34,13 @@ export async function handler(event) {
     images: (r.fields['Images'] || []).map((a) => a.thumbnails?.large?.url || a.url).filter(Boolean),
   })).sort((a, b) => a.sortOrder - b.sortOrder);
 
-  // 2. Clubs → promo flyers + active announcements. Active clubs only; Hide
-  //    Events only suppresses dated meeting lists, not flyers/announcements.
+  // 2. Clubs → promo flyers + active announcements. Fetch ALL clubs (not just
+  //    Active): flyers are gated by their own "Flyer Active" toggle + expiry
+  //    (isFlyerActive — a flyer can run before a club is publicly launched),
+  //    while announcements still show only for Active clubs. Hide Events only
+  //    suppresses dated meeting lists, not flyers/announcements.
   const clubsRes = await airtableFetch(`${e.baseId}/${e.tableClubs}`, {
     token: e.token,
-    query: { filterByFormula: `{Active} = TRUE()` },
   });
   if (!clubsRes.ok) return json(clubsRes.status, { error: 'Airtable error', details: clubsRes.data });
   const clubFlyers = [];
@@ -47,9 +49,11 @@ export async function handler(event) {
     const f = r.fields;
     const name = f['Name'] || '';
     const slug = f['Slug'] || '';
-    const flyer = (f['Promo Flyer'] || [])[0];
-    if (flyer) clubFlyers.push({ name, slug, flyerUrl: flyer.thumbnails?.large?.url || flyer.url || '' });
-    if (isAnnouncementActive(f)) announcements.push({ name, slug, text: String(f['Announcement']).trim() });
+    if (isFlyerActive(f)) {
+      const flyer = f['Promo Flyer'][0];
+      clubFlyers.push({ name, slug, flyerUrl: flyer.thumbnails?.large?.url || flyer.url || '' });
+    }
+    if (f['Active'] && isAnnouncementActive(f)) announcements.push({ name, slug, text: String(f['Announcement']).trim() });
   }
   clubFlyers.sort((a, b) => a.name.localeCompare(b.name));
   announcements.sort((a, b) => a.name.localeCompare(b.name));
