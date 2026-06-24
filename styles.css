@@ -785,6 +785,9 @@ button, .btn {
   border: 2px solid var(--primary-color);
 }
 
+/* Pale-green page background for the landing + calendar pages. */
+body.pale-green-bg { background: #ecf5ec; }
+
 /* Prominent "full calendar" call-to-action under the hero on the landing page. */
 .calendar-cta { text-align: center; margin: 1.25rem 0 1.75rem; }
 .calendar-cta .btn {

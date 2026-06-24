@@ -12,13 +12,19 @@
   <title>Club Calendar — Hilltop Clubs</title>
   <link rel="stylesheet" href="/styles.css" />
   <style>
-    /* Calendar page: week sections, each grouped into day blocks. Reuses the
-       shared .event-card / .event-modal styles from styles.css. */
+    /* Calendar page: week sections grouped into day blocks. Reuses the shared
+       .event-card / .event-modal styles from styles.css; green-accented. */
+    .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .cal-search-wrap { display: flex; align-items: center; gap: 8px; flex: 1 1 240px; max-width: 380px; }
+    .cal-search-wrap .search-bar { flex: 1 1 auto; min-width: 0; }
+    .cal-search-count { font-size: 0.85rem; color: #555; white-space: nowrap; }
+    /* Highlight the event the club search jumped to. */
+    .event-card.cal-hit { outline: 3px solid #1d6a3a; outline-offset: 1px; box-shadow: 0 0 0 4px rgba(29, 106, 58, 0.18); }
     .cal-intro { margin: 0 0 1rem; color: #555; }
     .cal-week { margin: 0 0 1.75rem; }
     .cal-week-head {
-      font-size: 1.05rem; font-weight: 700; color: var(--primary-color, #1d5fa8);
-      border-bottom: 2px solid var(--primary-color, #1d5fa8);
+      font-size: 1.05rem; font-weight: 700; color: #1d6a3a;
+      border-bottom: 2px solid #1d6a3a;
       padding-bottom: 0.3rem; margin: 0 0 0.85rem;
     }
     .cal-day { margin: 0 0 1rem; }
@@ -27,14 +33,17 @@
       display: flex; align-items: center; gap: 0.5rem;
     }
     .cal-today-badge {
-      background: var(--primary-color, #1d5fa8); color: #fff; font-size: 0.7rem;
+      background: #1d6a3a; color: #fff; font-size: 0.7rem;
       font-weight: 700; padding: 0.1rem 0.5rem; border-radius: 999px; letter-spacing: 0.03em;
     }
+    /* Darker-green left accent bar on calendar event cards (overrides the
+       shared blue accent on this page only). */
+    #calendar-view .event-card { border-left-color: #1d6a3a; }
     .cal-week-empty { color: #888; font-style: italic; margin: 0 0 0.5rem; }
     .cal-back { display: inline-block; margin: 0 0 1rem; }
   </style>
 </head>
-<body>
+<body class="pale-green-bg">
   <header class="site-hero">
     <div class="site-hero-overlay">
       <h1><a href="/">Hilltop Clubs</a></h1>
@@ -44,7 +53,13 @@
 
   <main>
     <a class="footer-link cal-back" href="/">← Back to all clubs</a>
-    <div class="section-head"><h3>📅 Upcoming club meetings</h3></div>
+    <div class="section-head cal-head">
+      <h3>📅 Upcoming club meetings</h3>
+      <div class="cal-search-wrap">
+        <input id="cal-search" class="search-bar search-input" type="search" placeholder="Find a club… (Enter = next)" autocomplete="off" />
+        <span id="cal-search-count" class="cal-search-count" aria-live="polite"></span>
+      </div>
+    </div>
     <p class="cal-intro">Recurring club meetings and one-off events for the weeks ahead. Tap any meeting to add it to your personal calendar.</p>
     <div id="calendar-view">
       <div class="loading">Loading…</div>
@@ -170,6 +185,44 @@
         view.innerHTML = `<div class="error">${escape(err.message)}</div>`;
       }
     }
+
+    // Club find: type a club name to jump to its first meeting on the calendar,
+    // then press Enter to step to the next one (wraps around). Nothing is hidden
+    // — matches are scrolled to and highlighted so you can open each (add to
+    // calendar / club info) from the modal.
+    let calMatches = [], calMatchPos = -1;
+    function clearCalHits() { document.querySelectorAll('.event-card.cal-hit').forEach((c) => c.classList.remove('cal-hit')); }
+    function updateCalCount() {
+      const c = $('#cal-search-count');
+      if (!c) return;
+      if (!$('#cal-search').value.trim()) { c.textContent = ''; return; }
+      c.textContent = calMatches.length ? `${calMatchPos + 1} of ${calMatches.length}` : 'no matches';
+    }
+    function gotoCalMatch(pos) {
+      clearCalHits();
+      if (!calMatches.length) { calMatchPos = -1; updateCalCount(); return; }
+      calMatchPos = ((pos % calMatches.length) + calMatches.length) % calMatches.length;
+      const card = document.querySelector(`.event-card[data-idx="${calMatches[calMatchPos]}"]`);
+      if (card) { card.classList.add('cal-hit'); card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      updateCalCount();
+    }
+    function recomputeCalMatches() {
+      const q = $('#cal-search').value.trim().toLowerCase();
+      calMatches = !q ? [] : allEvents
+        .map((e, i) => i)
+        .filter((i) => (allEvents[i].clubName || '').toLowerCase().includes(q) || (allEvents[i].eventName || '').toLowerCase().includes(q));
+    }
+    let calSearchTimer;
+    $('#cal-search').addEventListener('input', () => {
+      clearTimeout(calSearchTimer);
+      calSearchTimer = setTimeout(() => { recomputeCalMatches(); gotoCalMatch(0); }, 150);
+    });
+    $('#cal-search').addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (!calMatches.length) recomputeCalMatches();
+      gotoCalMatch(calMatchPos + 1);
+    });
 
     render();
   </script>
