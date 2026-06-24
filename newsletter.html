@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#1d5fa8" />
+  <meta name="apple-mobile-web-app-title" content="Hilltop Clubs" />
+  <title>Club Newsletter — Hilltop Clubs</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .nl-back { display: inline-block; margin: 0 0 1rem; }
+    .nl-intro { margin: 0 0 1.25rem; color: #555; }
+    .nl-block { margin: 0 0 2rem; }
+    .nl-title { font-size: 1.2rem; font-weight: 800; color: #1d6a3a; border-bottom: 2px solid #1d6a3a; padding-bottom: 0.3rem; margin: 0 0 0.85rem; }
+    .nl-md { line-height: 1.6; }
+    .nl-md h1, .nl-md h2, .nl-md h3, .nl-md h4 { color: #1d6a3a; margin: 1rem 0 0.4rem; }
+    .nl-md a { color: var(--primary-color, #1d5fa8); }
+    .nl-md img { max-width: 100%; border-radius: 8px; }
+    .nl-md blockquote { border-left: 4px solid #1d6a3a; margin: 0.6rem 0; padding: 0.3rem 0.9rem; color: #444; background: #f3f7f3; border-radius: 0 6px 6px 0; }
+    .nl-md code { background: #eef2ee; padding: 0.1rem 0.35rem; border-radius: 4px; }
+    .nl-images { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 0.6rem; }
+    .nl-images img { width: 320px; max-width: 100%; border-radius: 8px; }
+    .nl-week { margin: 0 0 1rem; }
+    .nl-week-head { font-weight: 700; color: #1d6a3a; margin: 0 0 0.4rem; }
+    .nl-day { margin: 0 0 0.6rem; }
+    .nl-day-head { font-size: 0.9rem; font-weight: 600; color: #333; margin: 0 0 0.35rem; display: flex; align-items: center; gap: 0.5rem; }
+    .nl-today-badge { background: #1d6a3a; color: #fff; font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.5rem; border-radius: 999px; letter-spacing: 0.03em; }
+    .nl-flyers { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+    .nl-flyer { display: block; text-decoration: none; color: inherit; border: 1px solid var(--gray-light, #e0e3e8); border-radius: 10px; overflow: hidden; background: #fff; }
+    .nl-flyer img { width: 100%; display: block; }
+    .nl-flyer span { display: block; padding: 8px 10px; font-weight: 600; }
+    .nl-anns { padding-left: 1.2rem; line-height: 1.6; }
+    .nl-anns a { font-weight: 600; }
+    .nl-empty { color: #888; font-style: italic; }
+    #newsletter-view .event-card { border-left-color: #1d6a3a; }
+    @media print {
+      .nl-back, .site-hero, .site-footer { display: none !important; }
+      body { background: #fff; }
+    }
+  </style>
+</head>
+<body class="pale-green-bg">
+  <header class="site-hero">
+    <div class="site-hero-overlay">
+      <h1><a href="/">Hilltop Clubs</a></h1>
+      <p class="tagline">Club Newsletter</p>
+    </div>
+  </header>
+
+  <main>
+    <a class="footer-link nl-back" href="/">← Back to all clubs</a>
+    <p class="nl-intro">News, events, and happenings from the Hilltop clubs.</p>
+    <div id="newsletter-view">
+      <div class="loading">Loading…</div>
+    </div>
+  </main>
+
+  <!-- Event detail modal — same markup as the calendar page. -->
+  <div id="event-modal" class="event-modal" hidden>
+    <div class="event-modal-backdrop" id="event-modal-backdrop"></div>
+    <div class="event-modal-card" role="dialog" aria-modal="true" aria-labelledby="em-title">
+      <button class="event-modal-close" id="event-modal-close" type="button" aria-label="Close">×</button>
+      <div id="event-modal-content"></div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div>
+      Hilltop at Inspiration · Aurora, CO ·
+      <a class="footer-link" href="mailto:miles.rick@gmail.com?subject=Hilltop%20Clubs%20Newsletter%20%E2%80%94%20Suggestion%20or%20correction&body=Hi%20Rick%2C%0A%0A">Suggest a club or report a correction</a>
+    </div>
+    <div class="credits">
+      Built by Rick Miles with help from <a class="footer-link" href="https://www.anthropic.com/claude" target="_blank" rel="noopener">Claude AI</a> by Anthropic ·
+      Hosted on <a class="footer-link" href="https://www.netlify.com" target="_blank" rel="noopener">Netlify</a> ·
+      Data in <a class="footer-link" href="https://airtable.com" target="_blank" rel="noopener">Airtable</a>
+    </div>
+  </footer>
+
+  <script src="/api-client.js"></script>
+  <script src="/calendar-links.js"></script>
+  <script src="/md.js"></script>
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+    const escape = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    let allEvents = [];           // flat list for the modal
+    let calData = { weeks: [], today: '' };
+
+    function eventCardHTML(ev, idx) {
+      return `
+        <button class="event-card ${ev.cancelled ? 'cancelled' : ''}" type="button" data-idx="${idx}">
+          <div class="event-card-name">${escape(ev.eventName || ev.clubName)}</div>
+          <div class="event-card-time">${ev.startTime ? escape(ev.startTime) : ''}${ev.cancelled ? ' · Cancelled' : ''}</div>
+          ${ev.location ? `<div class="event-card-loc">${escape(ev.location)}</div>` : ''}
+        </button>`;
+    }
+
+    function openEventModal(ev) {
+      const links = ev.cancelled ? null : calendarLinks(ev);
+      const timeText = ev.startTime ? `${escape(ev.startTime)}${ev.endTime ? ` – ${escape(ev.endTime)}` : ''}` : '';
+      $('#event-modal-content').innerHTML = `
+        <div class="em-title" id="em-title">${escape(ev.eventName || ev.clubName)}</div>
+        <div class="em-meta">${escape(ev.dayLabel)}${timeText ? ` · ${timeText}` : ''}</div>
+        ${ev.location ? `<div class="em-loc">📍 ${escape(ev.location)}</div>` : ''}
+        ${ev.note ? `<div class="em-note">${escape(ev.note)}</div>` : ''}
+        ${ev.cancelled ? '<div class="em-cancelled">⚠️ This meeting is cancelled.</div>' : ''}
+        <a class="em-clublink" href="/club/${encodeURIComponent(ev.clubSlug)}">More about ${escape(ev.clubName)} →</a>
+        ${links ? `
+          <div class="em-cal-label">Add to your calendar</div>
+          <div class="em-cal">
+            <a href="${links.google}" target="_blank" rel="noopener">📅 Google</a>
+            <a href="${links.apple}" download="event.ics">🍎 Apple</a>
+            <a href="${links.outlook}" target="_blank" rel="noopener">🪟 Outlook</a>
+          </div>` : ''}`;
+      $('#event-modal').hidden = false;
+      document.body.style.overflow = 'hidden';
+    }
+    function closeEventModal() { $('#event-modal').hidden = true; document.body.style.overflow = ''; }
+    $('#event-modal-close').addEventListener('click', closeEventModal);
+    $('#event-modal-backdrop').addEventListener('click', closeEventModal);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#event-modal').hidden) closeEventModal(); });
+    $('#newsletter-view').addEventListener('click', (e) => {
+      const card = e.target.closest('.event-card');
+      if (!card) return;
+      const ev = allEvents[parseInt(card.getAttribute('data-idx'), 10)];
+      if (ev) openEventModal(ev);
+    });
+
+    // ---- block renderers ----
+    function blockTitle(t, fallback) { const x = t || fallback; return x ? `<h2 class="nl-title">${escape(x)}</h2>` : ''; }
+
+    function renderMarkdownBlock(b) {
+      return `<section class="nl-block">
+        ${blockTitle(b.title, '')}
+        <div class="nl-md">${window.renderMarkdown(b.body || '')}</div>
+        ${b.images && b.images.length ? `<div class="nl-images">${b.images.map((u) => `<img src="${escape(u)}" alt="" loading="lazy" />`).join('')}</div>` : ''}
+      </section>`;
+    }
+
+    function renderEventsBlock(b) {
+      const weeksHtml = calData.weeks.map((w) => {
+        if (!w.events.length) return '';
+        const byDate = new Map();
+        for (const ev of w.events) { if (!byDate.has(ev.date)) byDate.set(ev.date, []); byDate.get(ev.date).push(ev); }
+        const days = [...byDate.entries()].map(([date, evs]) => {
+          const isToday = date === calData.today;
+          const cards = evs.map((ev) => { const idx = allEvents.push(ev) - 1; return eventCardHTML(ev, idx); }).join('');
+          return `<div class="nl-day"><div class="nl-day-head">${escape(evs[0].dayLabel)}${isToday ? '<span class="nl-today-badge">TODAY</span>' : ''}</div><div class="events-grid">${cards}</div></div>`;
+        }).join('');
+        return `<div class="nl-week"><div class="nl-week-head">${escape(w.label)}</div>${days}</div>`;
+      }).join('');
+      return `<section class="nl-block">${blockTitle(b.title, '📅 Upcoming club meetings')}${weeksHtml || '<p class="nl-empty">No club meetings in this window.</p>'}</section>`;
+    }
+
+    function renderFlyersBlock(b, flyers) {
+      const grid = flyers.length
+        ? `<div class="nl-flyers">${flyers.map((c) => `<a class="nl-flyer" href="/club/${encodeURIComponent(c.slug)}"><img src="${escape(c.flyerUrl)}" alt="${escape(c.name)} flyer" loading="lazy" /><span>${escape(c.name)}</span></a>`).join('')}</div>`
+        : '<p class="nl-empty">No club flyers yet.</p>';
+      return `<section class="nl-block">${blockTitle(b.title, '📣 Club flyers')}${grid}</section>`;
+    }
+
+    function renderAnnouncementsBlock(b, anns) {
+      const list = anns.length
+        ? `<ul class="nl-anns">${anns.map((a) => `<li><a href="/club/${encodeURIComponent(a.slug)}">${escape(a.name)}</a>: ${escape(a.text)}</li>`).join('')}</ul>`
+        : '<p class="nl-empty">No announcements right now.</p>';
+      return `<section class="nl-block">${blockTitle(b.title, '📢 Announcements')}${list}</section>`;
+    }
+
+    async function render() {
+      const view = $('#newsletter-view');
+      try {
+        const [nl, cal] = await Promise.all([ClubsAPI.getNewsletter(), ClubsAPI.getCalendarEvents(2)]);
+        allEvents = [];
+        calData = cal || { weeks: [], today: '' };
+        const html = (nl.blocks || []).map((b) => {
+          if (b.type === 'Club Events') return renderEventsBlock(b);
+          if (b.type === 'Club Flyers') return renderFlyersBlock(b, nl.clubFlyers || []);
+          if (b.type === 'Announcements') return renderAnnouncementsBlock(b, nl.announcements || []);
+          return renderMarkdownBlock(b);
+        }).join('');
+        view.innerHTML = html || '<div class="empty">This week’s newsletter is being put together — check back soon.</div>';
+      } catch (err) {
+        view.innerHTML = `<div class="error">${escape(err.message)}</div>`;
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>

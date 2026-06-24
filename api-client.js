@@ -40,6 +40,7 @@
     getClubEvents: (slug) => getJSON(`/api/get-club-events?slug=${encodeURIComponent(slug)}`),
     getWeekEvents: () => getJSON('/api/get-week-events'),
     getCalendarEvents: (weeks) => getJSON('/api/get-calendar-events' + (weeks ? `?weeks=${encodeURIComponent(weeks)}` : '')),
+    getNewsletter: () => getJSON('/api/get-newsletter'),
     getSeniorGeeksNext: () => getJSON('/api/get-senior-geeks-next'),
     getClubMailto: (slug) => getJSON(`/api/get-club-mailto?slug=${encodeURIComponent(slug)}`),
     leaderVerify: (payload) => postJSON('/api/leader-verify', payload),

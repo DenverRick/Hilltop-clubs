@@ -22,6 +22,11 @@
   status = 200
 
 [[redirects]]
+  from = "/newsletter"
+  to = "/newsletter.html"
+  status = 200
+
+[[redirects]]
   from = "/category/:slug"
   to = "/category.html?slug=:slug"
   status = 200
