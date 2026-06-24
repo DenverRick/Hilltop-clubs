@@ -51,10 +51,11 @@ export function env() {
   // functions validate them on their own.
   const tableClubEvents = process.env.AIRTABLE_TABLE_CLUB_EVENTS;
   const tableEventOverrides = process.env.AIRTABLE_TABLE_EVENT_OVERRIDES;
+  const tableNewsletter = process.env.AIRTABLE_TABLE_NEWSLETTER;
   if (!token || !baseId || !tableClubs || !tableCategories) {
     return { error: json(500, { error: 'Server configuration error' }) };
   }
-  return { token, baseId, tableClubs, tableCategories, tableClubEvents, tableEventOverrides };
+  return { token, baseId, tableClubs, tableCategories, tableClubEvents, tableEventOverrides, tableNewsletter };
 }
 
 export async function airtableFetch(path, { token, method = 'GET', body, query } = {}) {
