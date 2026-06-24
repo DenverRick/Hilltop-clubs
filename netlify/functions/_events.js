@@ -43,6 +43,20 @@ export function isAnnouncementActive(fields) {
   return expires >= todayDenver().ymd; // inclusive: shows through the expiry day
 }
 
+// Whether a club's Promo Flyer should currently show in the Club Newsletter.
+// Independent of the club's Active status (a flyer can run before a club is
+// publicly launched): needs an attachment present, the "Flyer Active" toggle
+// on, and — if a "Flyer Expires" date is set — today (America/Denver, never
+// server-local UTC; see CLAUDE.md invariant #5) on or before it. Blank expiry =
+// show until removed. Mirrors isAnnouncementActive().
+export function isFlyerActive(fields) {
+  if (!fields['Flyer Active']) return false;
+  if (!(fields['Promo Flyer'] || []).length) return false;
+  const expires = String(fields['Flyer Expires'] || '').slice(0, 10);
+  if (!expires) return true;
+  return expires >= todayDenver().ymd; // inclusive: shows through the expiry day
+}
+
 // Parse a 12-hour clock string ("9:30 am", "6:00PM") to minutes-since-midnight
 // for chronological sorting — string-comparing these puts "9:30 am" after
 // "12:30 pm". Blank/unparseable sorts last.

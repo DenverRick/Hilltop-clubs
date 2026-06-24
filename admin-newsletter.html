@@ -32,6 +32,17 @@
     .nl-thumb { display: flex; flex-direction: column; align-items: center; gap: 3px; }
     .nl-thumb img { height: 72px; border-radius: 6px; border: 1px solid var(--border, #e3e8ef); }
     .nl-del { color: #b91c1c; }
+    .nl-flyers-intro { margin: 4px 0 10px; }
+    .nl-flyer-row { align-items: flex-start; }
+    .nl-flyer-thumb { width: 88px; flex-shrink: 0; }
+    .nl-flyer-thumb img { width: 88px; border-radius: 6px; border: 1px solid var(--border, #e3e8ef); display: block; }
+    .nl-flyer-thumb .nl-flyer-noimg { font-size: 0.78rem; color: #888; font-style: italic; }
+    .nl-flyer-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+    .nl-flyer-controls label { display: inline-flex; align-items: center; gap: 5px; font-size: 0.9rem; margin: 0; }
+    .nl-flyer-controls input[type="date"] { font-size: 0.9rem; padding: 2px 4px; }
+    .nl-upload-btn { cursor: pointer; }
+    .nl-club-active-badge { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; background: #eef4ef; color: #1d6a3a; padding: 0.1rem 0.45rem; border-radius: 999px; }
+    .nl-club-inactive-badge { background: #f3f0ee; color: #9a6a00; }
   </style>
 </head>
 <body>
@@ -106,6 +117,13 @@
           <button class="btn btn-secondary" id="nl-cancel" type="button">Cancel</button>
         </div>
       </div>
+
+      <div class="edit-banner">
+        <span>Club flyers</span>
+      </div>
+      <p class="field-hint nl-flyers-intro">These feed the newsletter's “Club Flyers” section (wherever you placed the Club Flyers block). A flyer shows when <strong>Show</strong> is on and it hasn't passed its optional <strong>Good until</strong> date — the club doesn't have to be launched. Upload a JPEG, PNG, or WebP (max 5 MB).</p>
+      <div id="nl-status-flyers" class="form-status" hidden></div>
+      <div id="nl-club-flyers" class="nl-admin-list"><div class="field-hint">Loading clubs…</div></div>
     </div>
   </main>
 
@@ -119,6 +137,7 @@
     const PW_KEY = 'hc_nl_editor_pw';
     let pw = '';
     let blocks = [];
+    let clubFlyers = [];
 
     function setStatus(id, kind, msg) { const el = $('#' + id); if (!el) return; if (!msg) { el.hidden = true; return; } el.hidden = false; el.className = `form-status ${kind}`; el.textContent = msg; }
     const api = (action, extra) => ClubsAPI.newsletterAdmin({ password: pw, action, ...(extra || {}) });
@@ -138,6 +157,7 @@
         $('#editor').hidden = false;
         setStatus('login-status', 'success', '');
         renderBlocks();
+        loadClubFlyers();
       } catch (err) {
         pw = '';
         try { sessionStorage.removeItem(PW_KEY); } catch {}
@@ -296,6 +316,71 @@
         await reload();
         refreshFormImages(id);
       } catch (err) { setStatus('nl-image-status', 'error', err.message); }
+    });
+
+    // ---- club flyers ----
+    async function loadClubFlyers() {
+      try { const res = await api('listClubFlyers'); clubFlyers = res.clubs || []; renderClubFlyers(); }
+      catch (err) { setStatus('nl-status-flyers', 'error', err.message); }
+    }
+    function renderClubFlyers() {
+      const wrap = $('#nl-club-flyers');
+      if (!clubFlyers.length) { wrap.innerHTML = '<div class="field-hint">No clubs found.</div>'; return; }
+      wrap.innerHTML = clubFlyers.map((c) => {
+        const thumb = c.flyerUrl
+          ? `<img src="${escape(c.flyerUrl)}" alt="${escape(c.name)} flyer" />`
+          : '<span class="nl-flyer-noimg">No flyer yet</span>';
+        const badge = c.active
+          ? '<span class="nl-club-active-badge">Active</span>'
+          : '<span class="nl-club-active-badge nl-club-inactive-badge">Not launched</span>';
+        const hasFlyer = !!c.flyerUrl;
+        return `<div class="nl-admin-item nl-flyer-row" data-id="${c.id}">
+          <div class="nl-flyer-thumb">${thumb}</div>
+          <div class="nl-meta">
+            <div class="nl-name">${escape(c.name)} ${badge}</div>
+            <div class="nl-flyer-controls">
+              <label><input type="checkbox" data-act="toggle" ${c.flyerActive ? 'checked' : ''} ${hasFlyer ? '' : 'disabled'} /> Show in newsletter</label>
+              <label>Good until <input type="date" data-act="expires" value="${escape(c.flyerExpires)}" ${hasFlyer ? '' : 'disabled'} /></label>
+              <label class="btn btn-secondary btn-small nl-upload-btn">${hasFlyer ? 'Replace flyer' : 'Add flyer'}<input type="file" data-act="file" accept="image/jpeg,image/png,image/webp" hidden /></label>
+              ${hasFlyer ? '<button class="btn btn-secondary btn-small nl-del" data-act="remove" type="button">Remove</button>' : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    async function flyerApi(extra, msg) {
+      setStatus('nl-status-flyers', 'success', msg || 'Saving…');
+      try { await flyerApiCall(extra); await loadClubFlyers(); setStatus('nl-status-flyers', 'success', 'Saved.'); }
+      catch (err) { setStatus('nl-status-flyers', 'error', err.message); await loadClubFlyers(); }
+    }
+    function flyerApiCall(extra) { return api(extra.action, extra); }
+
+    $('#nl-club-flyers').addEventListener('change', async (e) => {
+      const el = e.target;
+      const id = el.closest('.nl-flyer-row')?.getAttribute('data-id'); if (!id) return;
+      const act = el.getAttribute('data-act');
+      if (act === 'toggle') { await flyerApi({ action: 'updateClubFlyer', id, flyerActive: el.checked }); return; }
+      if (act === 'expires') { await flyerApi({ action: 'updateClubFlyer', id, flyerExpires: el.value }); return; }
+      if (act === 'file') {
+        const file = el.files?.[0]; if (!file) return;
+        if (file.size > 5 * 1024 * 1024) { setStatus('nl-status-flyers', 'error', 'Image is over 5 MB.'); el.value = ''; return; }
+        setStatus('nl-status-flyers', 'success', 'Uploading…');
+        try {
+          const fileBase64 = await readFileAsBase64(file);
+          await api('uploadClubFlyer', { id, filename: file.name, contentType: file.type, fileBase64 });
+          el.value = '';
+          await loadClubFlyers();
+          setStatus('nl-status-flyers', 'success', 'Flyer added — it’s set to show.');
+        } catch (err) { setStatus('nl-status-flyers', 'error', err.message); }
+      }
+    });
+    $('#nl-club-flyers').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-act="remove"]'); if (!btn) return;
+      const id = btn.closest('.nl-flyer-row').getAttribute('data-id');
+      const club = clubFlyers.find((c) => c.id === id);
+      if (!confirm(`Remove the flyer for ${club ? club.name : 'this club'}?`)) return;
+      await flyerApi({ action: 'removeClubFlyer', id }, 'Removing…');
     });
 
     // Auto-unlock if a password is remembered for this tab session.
