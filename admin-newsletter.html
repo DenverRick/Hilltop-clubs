@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#1d5fa8" />
+  <meta name="apple-mobile-web-app-title" content="Hilltop Clubs" />
+  <title>Club Newsletter — Editor</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .nl-admin-list { margin: 14px 0; }
+    .nl-admin-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border, #e3e8ef); border-radius: 8px; margin-bottom: 8px; background: #fff; }
+    .nl-admin-item.inactive { opacity: 0.55; }
+    .nl-admin-item .nl-meta { flex: 1; min-width: 0; }
+    .nl-admin-item .nl-name { font-weight: 600; }
+    .nl-admin-item .nl-sub { font-size: 0.8rem; color: #666; }
+    .nl-type-badge { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; background: #eef4ef; color: #1d6a3a; padding: 0.1rem 0.45rem; border-radius: 999px; }
+    .nl-admin-actions { display: flex; gap: 4px; flex-wrap: wrap; flex-shrink: 0; }
+    .nl-admin-form { border: 1px solid var(--border, #d9dee5); border-radius: 8px; padding: 14px; margin-top: 14px; background: #f7f9fc; }
+    .nl-form-title { font-weight: 700; margin-bottom: 8px; }
+    .nl-preview-label { font-size: 0.8rem; font-weight: 600; color: #555; margin: 12px 0 4px; }
+    .nl-preview { border: 1px dashed var(--border, #cdd3cf); border-radius: 8px; padding: 10px 14px; background: #fff; min-height: 40px; }
+    .nl-md { line-height: 1.6; }
+    .nl-md h1, .nl-md h2, .nl-md h3, .nl-md h4 { color: #1d6a3a; margin: 0.6rem 0 0.3rem; }
+    .nl-md img { max-width: 100%; border-radius: 6px; }
+    .nl-md a { color: var(--primary-color, #1d5fa8); }
+    .nl-admin-images { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0; }
+    .nl-thumb { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .nl-thumb img { height: 72px; border-radius: 6px; border: 1px solid var(--border, #e3e8ef); }
+    .nl-del { color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <h1><a href="/">Hilltop Clubs</a></h1>
+    <div class="tagline">Club Newsletter — editor</div>
+    <a class="btn btn-secondary btn-small header-launch" href="/newsletter" target="_blank" rel="noopener">Open newsletter ↗</a>
+  </header>
+
+  <main>
+    <p>Compose the Club Newsletter. <strong>Markdown</strong> blocks are your own text (with photos, emoji, and links); the <strong>Club Events</strong>, <strong>Club Flyers</strong>, and <strong>Announcements</strong> blocks fill in automatically from the clubs' data. Drag order with the ↑ ↓ buttons; hide a block without deleting it by unchecking "Show".</p>
+
+    <div class="login-card" id="login-card">
+      <div class="login-card-title">Newsletter editor sign-in</div>
+      <label>Editor password
+        <div class="password-field">
+          <input id="editor-pw" type="password" autocomplete="current-password" />
+          <button type="button" id="toggle-pw" class="visibility-toggle" aria-label="Show password" aria-pressed="false">Show</button>
+        </div>
+      </label>
+      <div class="login-actions">
+        <button class="btn btn-primary" id="unlock-btn" type="button">Unlock</button>
+      </div>
+      <div id="login-status" class="form-status" hidden></div>
+    </div>
+
+    <div id="editor" hidden>
+      <div class="edit-banner">
+        <span>Newsletter blocks</span>
+        <div class="edit-banner-actions">
+          <button class="btn btn-primary btn-small" id="add-block" type="button">+ Add block</button>
+          <button class="btn btn-secondary btn-small" id="lock-btn" type="button">Lock</button>
+        </div>
+      </div>
+      <div id="nl-status" class="form-status" hidden></div>
+      <div id="nl-blocks" class="nl-admin-list"></div>
+
+      <div id="nl-form" class="nl-admin-form" hidden>
+        <div class="nl-form-title" id="nl-form-title">Add block</div>
+        <input type="hidden" id="nl-edit-id" />
+        <label>Type
+          <select id="nl-type">
+            <option value="Markdown">Markdown — your own text</option>
+            <option value="Club Events">Club Events (auto)</option>
+            <option value="Club Flyers">Club Flyers (auto)</option>
+            <option value="Announcements">Announcements (auto)</option>
+          </select>
+        </label>
+        <label>Title (optional heading)
+          <input id="nl-title" type="text" placeholder="e.g. From the Editor" />
+        </label>
+        <div id="nl-md-fields">
+          <label>Body (Markdown)
+            <textarea id="nl-body" rows="10" placeholder="# A heading&#10;&#10;**Bold**, *italic*, a [link](https://hilltopclubs.org), emoji 🎉&#10;&#10;- list item&#10;- another"></textarea>
+          </label>
+          <div class="nl-preview-label">Live preview</div>
+          <div id="nl-preview" class="nl-preview nl-md"></div>
+          <div id="nl-images-edit">
+            <div class="nl-preview-label">Photos</div>
+            <div id="nl-images-list" class="nl-admin-images"></div>
+            <input id="nl-image-file" type="file" accept="image/jpeg,image/png,image/webp" />
+            <span class="field-hint" id="nl-image-hint">Save the block first, then you can add photos.</span>
+            <div id="nl-image-status" class="form-status" hidden></div>
+          </div>
+        </div>
+        <label class="checkbox-row">
+          <input id="nl-active" type="checkbox" checked />
+          <span>Show this block on the newsletter</span>
+        </label>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="nl-save" type="button">Save block</button>
+          <button class="btn btn-secondary" id="nl-cancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">Hilltop at Inspiration · Aurora, CO</footer>
+
+  <script src="/api-client.js"></script>
+  <script src="/md.js"></script>
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const escape = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const PW_KEY = 'hc_nl_editor_pw';
+    let pw = '';
+    let blocks = [];
+
+    function setStatus(id, kind, msg) { const el = $('#' + id); if (!el) return; if (!msg) { el.hidden = true; return; } el.hidden = false; el.className = `form-status ${kind}`; el.textContent = msg; }
+    const api = (action, extra) => ClubsAPI.newsletterAdmin({ password: pw, action, ...(extra || {}) });
+
+    // ---- auth ----
+    async function unlock(silent) {
+      const candidate = silent ? pw : $('#editor-pw').value;
+      if (!candidate) { setStatus('login-status', 'error', 'Enter the editor password.'); return; }
+      pw = candidate;
+      $('#unlock-btn').disabled = true;
+      if (!silent) setStatus('login-status', 'success', 'Checking…');
+      try {
+        const res = await api('list');
+        blocks = res.blocks || [];
+        try { sessionStorage.setItem(PW_KEY, pw); } catch {}
+        $('#login-card').hidden = true;
+        $('#editor').hidden = false;
+        setStatus('login-status', 'success', '');
+        renderBlocks();
+      } catch (err) {
+        pw = '';
+        try { sessionStorage.removeItem(PW_KEY); } catch {}
+        if (!silent) setStatus('login-status', 'error', err.message);
+      } finally {
+        $('#unlock-btn').disabled = false;
+      }
+    }
+    $('#unlock-btn').addEventListener('click', () => unlock(false));
+    $('#editor-pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(false); });
+    $('#toggle-pw').addEventListener('click', () => {
+      const i = $('#editor-pw'), b = $('#toggle-pw');
+      const masked = i.type === 'password';
+      i.type = masked ? 'text' : 'password';
+      b.textContent = masked ? 'Hide' : 'Show';
+      b.setAttribute('aria-pressed', String(masked));
+    });
+    $('#lock-btn').addEventListener('click', () => {
+      pw = ''; blocks = [];
+      try { sessionStorage.removeItem(PW_KEY); } catch {}
+      $('#editor').hidden = true;
+      $('#login-card').hidden = false;
+      $('#editor-pw').value = '';
+    });
+
+    async function reload() { const res = await api('list'); blocks = res.blocks || []; renderBlocks(); }
+
+    // ---- block list ----
+    function renderBlocks() {
+      const wrap = $('#nl-blocks');
+      if (!blocks.length) { wrap.innerHTML = '<div class="field-hint">No blocks yet. Click “+ Add block”.</div>'; return; }
+      wrap.innerHTML = blocks.map((b, i) => {
+        const sub = b.type === 'Markdown'
+          ? `${(b.body || '').replace(/\s+/g, ' ').slice(0, 60) || '(empty)'}${b.images.length ? ` · ${b.images.length} photo(s)` : ''}`
+          : 'Auto-filled from club data';
+        return `<div class="nl-admin-item ${b.active ? '' : 'inactive'}" data-id="${b.id}">
+          <div class="nl-meta">
+            <div class="nl-name">${escape(b.title || '(untitled)')} <span class="nl-type-badge">${escape(b.type)}</span>${b.active ? '' : ' · hidden'}</div>
+            <div class="nl-sub">${escape(sub)}</div>
+          </div>
+          <div class="nl-admin-actions">
+            <button class="btn btn-secondary btn-small" data-act="up" type="button" ${i === 0 ? 'disabled' : ''}>↑</button>
+            <button class="btn btn-secondary btn-small" data-act="down" type="button" ${i === blocks.length - 1 ? 'disabled' : ''}>↓</button>
+            <button class="btn btn-secondary btn-small" data-act="edit" type="button">Edit</button>
+            <button class="btn btn-secondary btn-small nl-del" data-act="delete" type="button">Delete</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    $('#nl-blocks').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-act]'); if (!btn) return;
+      const id = btn.closest('.nl-admin-item').getAttribute('data-id');
+      const idx = blocks.findIndex((b) => b.id === id);
+      const act = btn.getAttribute('data-act');
+      if (act === 'edit') { openForm(blocks[idx]); return; }
+      if (act === 'delete') {
+        if (!confirm(`Delete "${blocks[idx].title || 'this block'}"?`)) return;
+        setStatus('nl-status', 'success', 'Deleting…');
+        try { await api('delete', { id }); setStatus('nl-status', 'success', ''); await reload(); } catch (err) { setStatus('nl-status', 'error', err.message); }
+      }
+      if (act === 'up' || act === 'down') {
+        const j = act === 'up' ? idx - 1 : idx + 1;
+        if (j < 0 || j >= blocks.length) return;
+        [blocks[idx], blocks[j]] = [blocks[j], blocks[idx]];
+        renderBlocks();
+        try { await api('reorder', { ids: blocks.map((b) => b.id) }); } catch (err) { setStatus('nl-status', 'error', err.message); await reload(); }
+      }
+    });
+
+    // ---- block form ----
+    function typeToggle() { $('#nl-md-fields').hidden = $('#nl-type').value !== 'Markdown'; }
+    function renderPreview() { $('#nl-preview').innerHTML = window.renderMarkdown($('#nl-body').value || ''); }
+    function renderFormImages(images) {
+      const wrap = $('#nl-images-list');
+      wrap.innerHTML = (images || []).map((im) => `<div class="nl-thumb"><img src="${escape(im.url)}" alt="" /><button class="btn btn-secondary btn-small nl-del" data-att="${im.id}" type="button">✕ remove</button></div>`).join('');
+    }
+    $('#nl-images-list').addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-att]'); if (!btn) return;
+      const id = $('#nl-edit-id').value; if (!id) return;
+      setStatus('nl-image-status', 'success', 'Removing…');
+      try { await api('removeImage', { id, attachmentId: btn.getAttribute('data-att') }); setStatus('nl-image-status', 'success', ''); await reload(); refreshFormImages(id); }
+      catch (err) { setStatus('nl-image-status', 'error', err.message); }
+    });
+    function refreshFormImages(id) { const b = blocks.find((x) => x.id === id); renderFormImages(b ? b.images : []); }
+
+    function openForm(b) {
+      $('#nl-edit-id').value = b ? b.id : '';
+      $('#nl-type').value = b ? b.type : 'Markdown';
+      $('#nl-title').value = b ? b.title : '';
+      $('#nl-body').value = b ? b.body : '';
+      $('#nl-active').checked = b ? b.active : true;
+      $('#nl-form-title').textContent = b ? 'Edit block' : 'Add block';
+      const hasId = !!(b && b.id);
+      $('#nl-image-file').disabled = !hasId;
+      $('#nl-image-hint').textContent = hasId ? 'Add a photo (JPEG/PNG/WebP, max 5 MB). It appears where you reference it, or stacked under the text.' : 'Save the block first, then you can add photos.';
+      renderFormImages(b ? b.images : []);
+      setStatus('nl-image-status', 'success', '');
+      typeToggle();
+      renderPreview();
+      $('#nl-form').hidden = false;
+      $('#nl-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    $('#add-block').addEventListener('click', () => openForm(null));
+    $('#nl-cancel').addEventListener('click', () => { $('#nl-form').hidden = true; });
+    $('#nl-type').addEventListener('change', typeToggle);
+    $('#nl-body').addEventListener('input', renderPreview);
+
+    $('#nl-save').addEventListener('click', async () => {
+      const id = $('#nl-edit-id').value;
+      const fields = {
+        Title: $('#nl-title').value.trim(),
+        Type: $('#nl-type').value,
+        Body: $('#nl-type').value === 'Markdown' ? $('#nl-body').value : '',
+        Active: $('#nl-active').checked,
+      };
+      $('#nl-save').disabled = true;
+      setStatus('nl-status', 'success', 'Saving…');
+      try {
+        if (id) {
+          await api('update', { id, fields });
+          await reload();
+          setStatus('nl-status', 'success', 'Saved.');
+          $('#nl-form').hidden = true;
+        } else {
+          const res = await api('create', { fields });
+          await reload();
+          // Keep the form open in edit mode for the new block so photos can be added.
+          const created = blocks.find((b) => b.id === res.id);
+          if (created) openForm(created);
+          setStatus('nl-status', 'success', 'Created — you can now add photos.');
+        }
+      } catch (err) { setStatus('nl-status', 'error', err.message); }
+      finally { $('#nl-save').disabled = false; }
+    });
+
+    // ---- image upload ----
+    function readFileAsBase64(file) {
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onerror = () => reject(new Error('Could not read file'));
+        r.onload = () => { const s = String(r.result || ''); const c = s.indexOf(','); resolve(c >= 0 ? s.slice(c + 1) : s); };
+        r.readAsDataURL(file);
+      });
+    }
+    $('#nl-image-file').addEventListener('change', async (ev) => {
+      const file = ev.target.files?.[0]; if (!file) return;
+      const id = $('#nl-edit-id').value;
+      if (!id) { setStatus('nl-image-status', 'error', 'Save the block first.'); ev.target.value = ''; return; }
+      if (file.size > 5 * 1024 * 1024) { setStatus('nl-image-status', 'error', 'Image is over 5 MB.'); ev.target.value = ''; return; }
+      setStatus('nl-image-status', 'success', 'Uploading…');
+      try {
+        const fileBase64 = await readFileAsBase64(file);
+        await api('upload', { id, filename: file.name, contentType: file.type, fileBase64 });
+        setStatus('nl-image-status', 'success', 'Added.');
+        ev.target.value = '';
+        await reload();
+        refreshFormImages(id);
+      } catch (err) { setStatus('nl-image-status', 'error', err.message); }
+    });
+
+    // Auto-unlock if a password is remembered for this tab session.
+    try { const saved = sessionStorage.getItem(PW_KEY); if (saved) { pw = saved; unlock(true); } } catch {}
+  </script>
+</body>
+</html>

@@ -41,6 +41,7 @@
     getWeekEvents: () => getJSON('/api/get-week-events'),
     getCalendarEvents: (weeks) => getJSON('/api/get-calendar-events' + (weeks ? `?weeks=${encodeURIComponent(weeks)}` : '')),
     getNewsletter: () => getJSON('/api/get-newsletter'),
+    newsletterAdmin: (payload) => postJSON('/api/newsletter-admin', payload),
     getSeniorGeeksNext: () => getJSON('/api/get-senior-geeks-next'),
     getClubMailto: (slug) => getJSON(`/api/get-club-mailto?slug=${encodeURIComponent(slug)}`),
     leaderVerify: (payload) => postJSON('/api/leader-verify', payload),
