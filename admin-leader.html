@@ -9,31 +9,8 @@
   <link rel="manifest" href="/site.webmanifest" />
   <meta name="theme-color" content="#1d5fa8" />
   <meta name="apple-mobile-web-app-title" content="Hilltop Clubs" />
-  <title>Update My Club</title>
+  <title>My Club — Meetings &amp; Calendar</title>
   <link rel="stylesheet" href="/styles.css" />
-  <style>
-    /* RSVP setup section (talks to the separate RSVP app). */
-    .rsvp-setup { border: 1px solid var(--border, #d9dee5); border-radius: 8px; padding: 12px 14px; margin: 14px 0; background: #f7f9fc; }
-    .rsvp-setup > summary { cursor: pointer; font-size: 1rem; }
-    .rsvp-block { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border, #e3e8ef); }
-    .rsvp-block-title { font-weight: 600; margin-bottom: 6px; }
-    .rsvp-help { margin: 6px 0; }
-    .rsvp-help > summary { cursor: pointer; }
-    /* Club-run meeting events manager */
-    .events-mgr { border: 1px solid var(--border, #d9dee5); border-radius: 8px; padding: 12px 14px; margin: 14px 0; background: #f7f9fc; }
-    .events-mgr-head { font-weight: 700; font-size: 1.05rem; margin-bottom: 4px; }
-    .evm-list { margin: 10px 0; }
-    .evm-item { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--border, #e3e8ef); }
-    .evm-item:last-child { border-bottom: none; }
-    .evm-item-name { font-weight: 600; }
-    .evm-item-meta { font-size: 0.85rem; color: #555; }
-    .evm-item-cancels { font-size: 0.8rem; color: #b91c1c; margin-top: 2px; }
-    .evm-item-actions { display: flex; flex-wrap: wrap; gap: 4px; flex-shrink: 0; }
-    .evm-del { color: #b91c1c; }
-    .evm-form { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border, #e3e8ef); }
-    .evm-form-title { font-weight: 600; margin-bottom: 6px; }
-    .evm-form-actions { display: flex; gap: 6px; margin-top: 6px; }
-  </style>
 </head>
 <body>
   <header class="site-header">
@@ -43,46 +20,40 @@
   </header>
 
   <main>
+    <nav class="leader-nav">
+      <a class="leader-nav-link active" data-path="/admin/leader" href="/admin/leader">📅 Meetings &amp; calendar</a>
+      <a class="leader-nav-link" data-path="/admin/leader/about" href="/admin/leader/about">📝 About the club</a>
+      <a class="leader-nav-link" data-path="/admin/leader/outreach" href="/admin/leader/outreach">📣 Announcements &amp; outreach</a>
+      <a class="leader-nav-link" data-path="/admin/leader/help" href="/admin/leader/help">📖 Instructions</a>
+    </nav>
+
     <p>
       Pick your club and enter the email address management has on file for you,
-      then click <strong>Log in</strong>. Once we confirm it's you, the edit
-      fields appear — pre-filled with what's currently on your page, so you only
-      change what you want. Only your own club can be edited.
+      then click <strong>Log in</strong>. Once we confirm it's you, your meeting
+      schedule and events appear — only your own club can be edited.
     </p>
     <p class="helper-note">
       Note: leaving a field blank keeps the existing value (it doesn't erase it).
       If you actually want to clear a field, email Rick.
     </p>
-    <p class="helper-note">
-      How your email is handled: it's never shown on your public club page or in
-      any listing. Residents reach you through an "I'm interested" button that
-      opens a message in their own mail app — so your address appears only in the
-      email they send to you, never displayed on the site itself.
-    </p>
 
     <form class="leader-form" id="leader-form">
-      <!-- Step 1: login card. Club + email + Log in. Visually distinct from
-           the edit fields, which stay hidden until verification succeeds. -->
+      <!-- Step 1: login card (shared across all leader pages). -->
       <div class="login-card" id="login-card">
         <div class="login-card-title">Club leader sign-in</div>
-
         <label>Club
-          <input id="club-search" list="club-list" placeholder="Start typing your club name…"
-                 autocomplete="off" />
+          <input id="club-search" list="club-list" placeholder="Start typing your club name…" autocomplete="off" />
           <datalist id="club-list"></datalist>
           <input type="hidden" id="slug" />
           <span class="field-hint">Type a few letters of your club's name, then pick it from the list.</span>
         </label>
-
         <label>Club Leader's email (must match our records)
           <div class="password-field">
             <input id="submitter_email" type="email" required autocomplete="email" inputmode="email" />
-            <button type="button" id="toggle-email-visibility" class="visibility-toggle"
-                    aria-label="Hide email" aria-pressed="true">Hide</button>
+            <button type="button" id="toggle-email-visibility" class="visibility-toggle" aria-label="Hide email" aria-pressed="true">Hide</button>
           </div>
           <span id="email-hint" class="field-hint" hidden></span>
         </label>
-
         <div class="login-actions">
           <button class="btn btn-primary" id="login-btn" type="button">Log in</button>
           <button class="btn btn-secondary" id="cancel-top" type="button">Cancel</button>
@@ -91,7 +62,7 @@
         <button type="button" id="forget-logins" class="btn btn-secondary btn-small" hidden>Forget saved sign-ins on this device</button>
       </div>
 
-      <!-- Step 2: edit fields. Hidden until login verified. -->
+      <!-- Step 2: Meetings & calendar fields. Hidden until login verified. -->
       <div id="edit-section" hidden>
         <div class="edit-banner">
           <span id="edit-banner-text">Editing your club</span>
@@ -103,255 +74,115 @@
         </div>
         <div id="status-top" class="form-status" hidden></div>
 
-      <label>Short blurb (one sentence for the club view)
-        <input id="Short Blurb" type="text" maxlength="160" />
-      </label>
-
-      <div class="announce-fields">
-        <label>📢 Announcement (optional — shows as a banner on your card and page)
-          <textarea id="Announcement" rows="2" maxlength="280" placeholder="e.g. Mon Jun 8: Quilt of Valor awards ceremony in M1 — all welcome, cake after!"></textarea>
-          <span class="field-hint">Great for a one-time event or notice. Set an expiry date below and it disappears on its own afterward — no need to come back and delete it.</span>
+        <label>Meeting frequency
+          <select id="Meeting Frequency">
+            <option value=""></option>
+            <option>Weekly</option>
+            <option>Bi-weekly</option>
+            <option>Monthly</option>
+            <option>Ad-hoc</option>
+          </select>
         </label>
-        <div id="announcement-status" hidden style="margin:4px 0 8px; font-size:.875rem;"></div>
-        <label>Announcement expires (optional)
-          <input id="Announcement Expires" type="date" />
-          <span class="field-hint">After this date the announcement stops showing. Leave blank to keep showing it.</span>
+
+        <label>Meeting day
+          <select id="Meeting Day">
+            <option value=""></option>
+            <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+            <option>Thursday</option><option>Friday</option><option>Saturday</option>
+            <option>Sunday</option><option>Varies</option>
+          </select>
         </label>
-        <button type="button" id="remove-announcement" hidden class="btn btn-secondary btn-small" style="margin-top:4px; color:#b91c1c;">✕ Remove announcement</button>
-      </div>
 
-      <label>Long description
-        <textarea id="Long Description" rows="6"></textarea>
-      </label>
+        <label>Meeting schedule (optional override of Frequency + Day, e.g. "3rd Wednesday of each month")
+          <input id="Meeting Schedule" type="text" placeholder="3rd Wednesday of each month" />
+        </label>
 
-      <label>Vibe / demographics (free-form — e.g., "30 members, mostly couples, drop-ins welcome")
-        <textarea id="Vibe / Demographics" rows="3"></textarea>
-      </label>
+        <label>Meeting time
+          <input id="Meeting Time" type="text" placeholder="7:00 PM" />
+        </label>
 
-      <label>What to bring (for first-time attendees — e.g., "Bring snacks and $10 buy-in", "Wear comfortable shoes, supplies provided", "Just yourself!")
-        <textarea id="What to Bring" rows="3"></textarea>
-      </label>
+        <label>Meeting location
+          <input id="Meeting Location" type="text" placeholder="Clubhouse Card Room" />
+        </label>
 
-      <label>Tags (comma-separated, e.g., "couples-friendly, drop-ins welcome, outdoors")
-        <input id="Tags" type="text" placeholder="couples-friendly, drop-ins welcome" />
-      </label>
+        <!-- Club-run meeting events: recurring meetings + one-off events. Writes
+             to the club-owned base via /api/leader-events; shows on /calendar +
+             the club page immediately. -->
+        <section class="events-mgr" id="events-mgr">
+          <div class="events-mgr-head">📅 Your meetings &amp; events</div>
+          <p class="field-hint">These drive your club's spot on the calendar and your club page. Recurring meetings repeat on their own; add one-offs for special events, and use "Cancel a date" to skip a single week.</p>
+          <div id="evm-list" class="evm-list"><div class="field-hint">Log in to load your events.</div></div>
+          <div id="evm-status" class="form-status" hidden></div>
 
-      <label>Meeting frequency
-        <select id="Meeting Frequency">
-          <option value=""></option>
-          <option>Weekly</option>
-          <option>Bi-weekly</option>
-          <option>Monthly</option>
-          <option>Ad-hoc</option>
-        </select>
-      </label>
-
-      <label>Meeting day
-        <select id="Meeting Day">
-          <option value=""></option>
-          <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
-          <option>Thursday</option><option>Friday</option><option>Saturday</option>
-          <option>Sunday</option><option>Varies</option>
-        </select>
-      </label>
-
-      <label>Meeting schedule (optional override of Frequency + Day, e.g. "3rd Wednesday of each month")
-        <input id="Meeting Schedule" type="text" placeholder="3rd Wednesday of each month" />
-      </label>
-
-      <label>Meeting time
-        <input id="Meeting Time" type="text" placeholder="7:00 PM" />
-      </label>
-
-      <label>Meeting location
-        <input id="Meeting Location" type="text" placeholder="Clubhouse Card Room" />
-      </label>
-
-      <label>Member count (optional)
-        <input id="Member Count" type="number" min="0" />
-      </label>
-
-      <!-- Club-run meeting events. Leaders manage their own recurring meetings
-           and one-off events here; writes go to the club-owned base via
-           /api/leader-events and show on /calendar + the club page immediately. -->
-      <section class="events-mgr" id="events-mgr">
-        <div class="events-mgr-head">📅 Your meetings &amp; events</div>
-        <p class="field-hint">These drive your club's spot on the calendar and your club page. Recurring meetings repeat on their own; add one-offs for special events, and use "Cancel a date" to skip a single week.</p>
-        <div id="evm-list" class="evm-list"><div class="field-hint">Log in to load your events.</div></div>
-        <div id="evm-status" class="form-status" hidden></div>
-
-        <div class="evm-form" id="evm-form">
-          <div class="evm-form-title" id="evm-form-title">Add a meeting or event</div>
-          <input type="hidden" id="evm-edit-id" />
-          <label>Type
-            <select id="evm-type">
-              <option value="Recurring">Recurring meeting</option>
-              <option value="One-off">One-off event</option>
-            </select>
-          </label>
-          <label>Event name
-            <input id="evm-name" type="text" placeholder="e.g. Bridge Club" />
-          </label>
-          <div id="evm-recurring-fields">
-            <label>Day
-              <select id="evm-day">
-                <option value=""></option>
-                <option>Sunday</option><option>Monday</option><option>Tuesday</option>
-                <option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option>
+          <div class="evm-form" id="evm-form">
+            <div class="evm-form-title" id="evm-form-title">Add a meeting or event</div>
+            <input type="hidden" id="evm-edit-id" />
+            <label>Type
+              <select id="evm-type">
+                <option value="Recurring">Recurring meeting</option>
+                <option value="One-off">One-off event</option>
               </select>
             </label>
-            <label>Repeats
-              <select id="evm-recurrence">
-                <option value=""></option>
-                <option>Weekly</option><option>Every other</option>
-                <option>1st</option><option>2nd</option><option>3rd</option><option>4th</option><option>Last</option>
-              </select>
-              <span class="field-hint">"1st"–"Last" mean that weekday each month (e.g. "1st" = first Monday).</span>
+            <label>Event name
+              <input id="evm-name" type="text" placeholder="e.g. Bridge Club" />
             </label>
-            <label id="evm-refdate-label" hidden>Reference date (anchors the every-other cycle)
-              <input id="evm-refdate" type="date" />
+            <div id="evm-recurring-fields">
+              <label>Day
+                <select id="evm-day">
+                  <option value=""></option>
+                  <option>Sunday</option><option>Monday</option><option>Tuesday</option>
+                  <option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option>
+                </select>
+              </label>
+              <label>Repeats
+                <select id="evm-recurrence">
+                  <option value=""></option>
+                  <option>Weekly</option><option>Every other</option>
+                  <option>1st</option><option>2nd</option><option>3rd</option><option>4th</option><option>Last</option>
+                </select>
+                <span class="field-hint">"1st"–"Last" mean that weekday each month (e.g. "1st" = first Monday).</span>
+              </label>
+              <label id="evm-refdate-label" hidden>Reference date (anchors the every-other cycle)
+                <input id="evm-refdate" type="date" />
+              </label>
+            </div>
+            <div id="evm-oneoff-fields" hidden>
+              <label>Date
+                <input id="evm-date" type="date" />
+              </label>
+            </div>
+            <label>Start time
+              <input id="evm-start" type="text" placeholder="7:00 PM" />
             </label>
-          </div>
-          <div id="evm-oneoff-fields" hidden>
-            <label>Date
-              <input id="evm-date" type="date" />
+            <label>End time (optional)
+              <input id="evm-end" type="text" placeholder="8:30 PM" />
             </label>
+            <label>Location
+              <input id="evm-location" type="text" placeholder="M1 &amp; Kitchen" />
+            </label>
+            <label>Note (optional)
+              <input id="evm-note" type="text" placeholder="e.g. Bring a snack to share" />
+            </label>
+            <div class="evm-form-actions">
+              <button class="btn btn-primary btn-small" id="evm-save" type="button">Add event</button>
+              <button class="btn btn-secondary btn-small" id="evm-cancel-edit" type="button" hidden>Cancel edit</button>
+            </div>
           </div>
-          <label>Start time
-            <input id="evm-start" type="text" placeholder="7:00 PM" />
-          </label>
-          <label>End time (optional)
-            <input id="evm-end" type="text" placeholder="8:30 PM" />
-          </label>
-          <label>Location
-            <input id="evm-location" type="text" placeholder="M1 &amp; Kitchen" />
-          </label>
-          <label>Note (optional)
-            <input id="evm-note" type="text" placeholder="e.g. Bring a snack to share" />
-          </label>
-          <div class="evm-form-actions">
-            <button class="btn btn-primary btn-small" id="evm-save" type="button">Add event</button>
-            <button class="btn btn-secondary btn-small" id="evm-cancel-edit" type="button" hidden>Cancel edit</button>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- RSVP setup. Talks to the separate RSVP app via /api/leader-rsvp-setup.
-           Collapsed by default; opening it provisions this club's RSVP record. -->
-      <details class="rsvp-setup">
-        <summary><strong>📋 RSVP — collect attendance</strong> <span class="optional-tag">(optional)</span></summary>
-        <p class="field-hint" style="margin-top:8px;">
-          Instead of email/TeamReach replies, send members a one-tap RSVP link and watch a live
-          headcount. Set this up once, then manage events from your RSVP dashboard.
-        </p>
-        <div id="rsvp-status" class="form-status" hidden></div>
-
-        <div class="rsvp-block">
-          <div class="rsvp-block-title">1. Your members</div>
-          <label>Paste member email addresses (any separator — commas, spaces, or one per line)
-            <textarea id="rsvp-emails" rows="4" placeholder="alice@example.com, bob@example.com&#10;carol@example.com"></textarea>
-          </label>
-          <button class="btn btn-secondary" id="rsvp-import-btn" type="button">Import members</button>
-          <div id="rsvp-import-status" class="form-status" hidden></div>
-        </div>
-
-        <div class="rsvp-block">
-          <div class="rsvp-block-title">2. Your club's sending email</div>
-          <p class="field-hint" id="rsvp-sending-state">Invites send from this address. Required before you can send.</p>
-          <label>Club Gmail address
-            <input id="rsvp-gmail" type="email" inputmode="email" placeholder="yourclub@gmail.com" />
-          </label>
-          <label>Gmail App Password
-            <input id="rsvp-app-password" type="password" autocomplete="off" placeholder="16-character app password" />
-          </label>
-          <details class="rsvp-help">
-            <summary class="field-hint">How do I get an App Password?</summary>
-            <ol class="field-hint" style="margin:6px 0 0; padding-left:18px;">
-              <li>Sign in to your club's Gmail, then turn on <strong>2-Step Verification</strong>
-                  (Google Account → Security).</li>
-              <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">myaccount.google.com/apppasswords</a>,
-                  create one named "RSVP", and copy the 16-character code.</li>
-              <li>Paste it above and save. We store it encrypted — never in plain text.</li>
-            </ol>
-          </details>
-          <button class="btn btn-secondary" id="rsvp-save-creds-btn" type="button">Save sending email</button>
-          <div id="rsvp-creds-status" class="form-status" hidden></div>
-        </div>
-
-        <div class="rsvp-block" id="rsvp-dashboard-block" hidden>
-          <div class="rsvp-block-title">3. Your RSVP dashboard</div>
-          <p class="field-hint">Set your event and send invites here (bookmark it):</p>
-          <a id="rsvp-dashboard-link" href="#" target="_blank" rel="noopener">Open my RSVP dashboard ↗</a>
-        </div>
-      </details>
-
-      <label>Thumbnail image (replaces your current banner — JPEG, PNG, or WebP, max 5 MB)
-        <div id="thumbnail-preview" class="current-media" hidden>
-          <span class="current-media-label">Current banner:</span>
-          <img id="thumbnail-preview-img" alt="Current banner" />
-          <button type="button" id="thumbnail-remove" class="btn-remove-media">Remove banner</button>
-        </div>
-        <input id="thumbnail-file" type="file" accept="image/jpeg,image/png,image/webp" />
-        <span class="field-hint"><strong>Photo policy:</strong> please don't upload images that show identifiable club members. We don't blur or anonymize uploaded photos — if a photo shows people, we'll ask you for a different one. Best options: a wide shot with no faces, an object/scene photo (equipment, location), or reply to Rick to have an AI banner generated for your review.</span>
-        <div id="thumbnail-status" class="form-status" hidden></div>
-      </label>
-
-      <label>Promo flyer (the same kind of one-pager you'd send to the newsletter — JPEG, PNG, or WebP, max 5 MB)
-        <div id="flyer-preview" class="current-media" hidden>
-          <span class="current-media-label">Current flyer:</span>
-          <img id="flyer-preview-img" alt="Current flyer" />
-          <button type="button" id="flyer-remove" class="btn-remove-media">Remove flyer</button>
-        </div>
-        <input id="flyer-file" type="file" accept="image/jpeg,image/png,image/webp" />
-        <span class="field-hint">Shown on your club's public page as a "📣 Latest from [your club]" callout. Replaces whatever's there now whenever you upload a new one.</span>
-        <div id="flyer-status" class="form-status" hidden></div>
-      </label>
-
-      <label class="checkbox-row">
-        <input id="Hide Events" type="checkbox" />
-        <span>
-          <strong>Hide my upcoming meeting dates</strong>
-          <span class="field-hint">Check this if you'd prefer that the public page not list specific upcoming dates for your club. Your meeting <em>cadence</em> (e.g. "Tuesdays at 1pm") still shows; this only suppresses the dated list.</span>
-        </span>
-      </label>
-
-      <div class="ai-draft-section">
-        <label class="draft-context-label">What's this email about? <span class="optional-tag">(optional, but makes it much better)</span>
-          <textarea id="draft-context" rows="3" placeholder="e.g. This month Dr. Lee speaks on AI in medicine — bring questions. Or: we're recruiting new members for the fall season."></textarea>
-          <span class="field-hint">A sentence or two on the specific hook — the speaker, topic, occasion, or what you want residents to do. Claude can't know this on its own, so this is what stops the email from sounding generic.</span>
+        <label class="checkbox-row">
+          <input id="Hide Events" type="checkbox" />
+          <span>
+            <strong>Hide my upcoming meeting dates</strong>
+            <span class="field-hint">Check this if you'd prefer that the public page not list specific upcoming dates for your club. Your meeting <em>cadence</em> (e.g. "Tuesdays at 1pm") still shows; this only suppresses the dated list.</span>
+          </span>
         </label>
-        <button class="btn btn-secondary" id="draft-email-btn" type="button">✨ Draft a promo email about your next event</button>
-        <span class="field-hint">Email is drafted by Claude AI from your club's info and next upcoming event. Review before sending. Opens in your mail app — your members are not contacted directly from this page.</span>
-        <div id="draft-status" class="form-status" hidden></div>
-        <div id="draft-output" class="draft-output" hidden>
-          <div class="draft-label">Subject</div>
-          <input class="draft-subject" id="draft-subject" type="text" readonly />
-          <div class="draft-label">Body</div>
-          <textarea class="draft-body" id="draft-body" rows="10" readonly></textarea>
-          <div class="draft-actions">
-            <button class="btn btn-primary" id="draft-open-mail" type="button">Open in mail app</button>
-            <button class="btn btn-secondary" id="draft-copy" type="button">Copy to clipboard</button>
-          </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">Save changes</button>
+          <button class="btn btn-secondary" id="cancel-bottom" type="button">Cancel</button>
         </div>
-      </div>
-
-      <label>YouTube URLs (one per line)
-        <textarea id="YouTube URLs" rows="3" placeholder="https://www.youtube.com/watch?v=..."></textarea>
-      </label>
-
-      <label>External website
-        <input id="External Website" type="url" placeholder="https://" />
-      </label>
-
-      <label>TeamReach group code (optional)
-        <input id="TeamReach" type="text" placeholder="e.g. HSG2022" />
-      </label>
-
-      <div class="form-actions">
-        <button class="btn btn-primary" type="submit">Save changes</button>
-        <button class="btn btn-secondary" id="cancel-bottom" type="button">Cancel</button>
-      </div>
-      <div id="status" class="form-status" hidden></div>
+        <div id="status" class="form-status" hidden></div>
       </div><!-- /#edit-section -->
     </form>
   </main>
@@ -359,815 +190,6 @@
   <footer class="site-footer">Hilltop at Inspiration · Aurora, CO</footer>
 
   <script src="/api-client.js"></script>
-  <script>
-    const $ = (sel) => document.querySelector(sel);
-
-    // Fields that map directly through. Tags need parsing into an array;
-    // Member Count needs to be a number; everything else is a string.
-    const STRING_FIELDS = [
-      'Short Blurb', 'Long Description', 'Vibe / Demographics', 'What to Bring',
-      'Meeting Frequency', 'Meeting Day', 'Meeting Schedule', 'Meeting Time', 'Meeting Location',
-      'YouTube URLs', 'External Website', 'TeamReach',
-      'Announcement', 'Announcement Expires',
-    ];
-
-    // Club picker is a type-to-filter combobox: the visible text input feeds a
-    // <datalist> so leaders can type a few letters and pick their club, instead
-    // of single-letter jumps in a native <select>. The typed name is resolved
-    // to its slug into the hidden #slug field, which the rest of the page reads.
-    const nameToSlug = new Map();
-    const slugToName = new Map();
-    const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-    async function populateClubs() {
-      const search = $('#club-search');
-      const list = $('#club-list');
-      try {
-        const { clubs } = await ClubsAPI.getAllClubs();
-        if (!clubs.length) { search.placeholder = 'No clubs yet'; search.disabled = true; return; }
-        const sorted = clubs.slice().sort((a, b) => a.name.localeCompare(b.name));
-        nameToSlug.clear();
-        slugToName.clear();
-        for (const c of sorted) { nameToSlug.set(c.name.toLowerCase(), c.slug); slugToName.set(c.slug, c.name); }
-        list.innerHTML = sorted.map((c) => `<option value="${escAttr(c.name)}"></option>`).join('');
-      } catch (err) {
-        search.placeholder = `Error: ${err.message}`;
-      }
-    }
-
-    // Remember each club's sign-in on THIS device so a returning leader (or Rick,
-    // editing many clubs from his own computer) doesn't retype the club + email
-    // every time. Stored only in localStorage on this browser — never sent
-    // anywhere new; the email is the leader's own address, already used to log
-    // in. A "Forget saved sign-ins" button clears it for shared machines.
-    const LS_LOGINS = 'hc_leader_logins';   // { slug: email }
-    const LS_LAST = 'hc_leader_last_slug';
-    function readLogins() { try { return JSON.parse(localStorage.getItem(LS_LOGINS)) || {}; } catch { return {}; } }
-    function rememberedEmail(slug) { return (slug && readLogins()[slug]) || ''; }
-    function rememberLogin(slug, email) {
-      if (!slug || !email) return;
-      const m = readLogins(); m[slug] = email;
-      try { localStorage.setItem(LS_LOGINS, JSON.stringify(m)); localStorage.setItem(LS_LAST, slug); } catch {}
-      refreshForgetButton();
-    }
-    function refreshForgetButton() {
-      $('#forget-logins').hidden = Object.keys(readLogins()).length === 0;
-    }
-    function selectClubBySlug(slug) {
-      const name = slugToName.get(slug);
-      if (!name) return false;
-      $('#club-search').value = name;
-      $('#slug').value = slug;
-      return true;
-    }
-    // On load, jump straight to a club via ?slug=… (e.g. a per-club "Edit" link),
-    // falling back to the last club edited on this device. If we have its saved
-    // email, auto-attempt login so the edit fields appear without a click.
-    function initSavedLogin() {
-      refreshForgetButton();
-      const params = new URLSearchParams(location.search);
-      const targetSlug = (params.get('slug') || '').trim() || localStorage.getItem(LS_LAST) || '';
-      if (!targetSlug || !selectClubBySlug(targetSlug)) return;
-      const email = rememberedEmail(targetSlug);
-      if (!email) return;
-      $('#submitter_email').value = email;
-      attemptLogin();
-    }
-    $('#forget-logins').addEventListener('click', () => {
-      try { localStorage.removeItem(LS_LOGINS); localStorage.removeItem(LS_LAST); } catch {}
-      $('#club-search').value = '';
-      $('#slug').value = '';
-      $('#submitter_email').value = '';
-      collapseToLogin();
-      setLoginStatus('success', '');
-      refreshForgetButton();
-    });
-    // Map what's typed to a slug. Exact name wins; otherwise a unique prefix
-    // match (so two or three letters can land them on their club).
-    function resolveSlug() {
-      const typed = $('#club-search').value.trim().toLowerCase();
-      let slug = nameToSlug.get(typed) || '';
-      if (!slug && typed) {
-        const matches = [...nameToSlug.entries()].filter(([name]) => name.startsWith(typed));
-        if (matches.length === 1) slug = matches[0][1];
-      }
-      $('#slug').value = slug;
-      return slug;
-    }
-
-    // Pre-populate the form with the club's current public values so leaders
-    // can edit-in-place rather than retype everything. All fields shown here
-    // are already public on the club's detail page (Leader Email is not in
-    // the form), so this is not a sensitive disclosure. Email-match still
-    // gates the actual save.
-    function clearFormFields() {
-      const ids = ['Short Blurb', 'Long Description', 'Vibe / Demographics', 'What to Bring', 'Tags',
-        'Meeting Frequency', 'Meeting Day', 'Meeting Schedule', 'Meeting Time',
-        'Meeting Location', 'Member Count', 'YouTube URLs',
-        'External Website', 'TeamReach', 'Announcement', 'Announcement Expires'];
-      for (const id of ids) document.getElementById(id).value = '';
-      document.getElementById('Hide Events').checked = false;
-      evmClubDefaults = { name: '', day: '', time: '', location: '' };
-      document.getElementById('announcement-status').hidden = true;
-      document.getElementById('remove-announcement').hidden = true;
-      setMediaPreview('thumbnail', '', 'Current banner:');
-      setMediaPreview('flyer', '', 'Current flyer:');
-      document.getElementById('draft-context').value = '';
-    }
-    async function loadCurrentValues(slug) {
-      if (!slug) { clearFormFields(); return; }
-      setStatus('success', 'Loading current values…');
-      try {
-        const { club } = await ClubsAPI.getClub(slug);
-        document.getElementById('Short Blurb').value = club.blurb || '';
-        document.getElementById('Long Description').value = club.description || '';
-        document.getElementById('Vibe / Demographics').value = club.vibe || '';
-        document.getElementById('What to Bring').value = club.whatToBring || '';
-        document.getElementById('Tags').value = (club.tags || []).join(', ');
-        document.getElementById('Meeting Frequency').value = club.meetingFrequency || '';
-        document.getElementById('Meeting Day').value = club.meetingDay || '';
-        document.getElementById('Meeting Schedule').value = club.meetingSchedule || '';
-        document.getElementById('Meeting Time').value = club.meetingTime || '';
-        document.getElementById('Meeting Location').value = club.meetingLocation || '';
-        document.getElementById('Member Count').value = club.memberCount ?? '';
-        // Remember the club's saved meeting info to pre-fill a new recurring event.
-        evmClubDefaults = {
-          name: club.name || '',
-          day: club.meetingDay || '',
-          time: club.meetingTime || '',
-          location: club.meetingLocation || '',
-        };
-        document.getElementById('YouTube URLs').value = (club.youtubeUrls || []).join('\n');
-        // Airtable accepts schemeless URLs (e.g. "www.foo.org") but the HTML5
-        // url input doesn't — prefix https:// so the field validates on save.
-        const rawWebsite = (club.website || '').trim();
-        const website = rawWebsite && !/^https?:\/\//i.test(rawWebsite) ? `https://${rawWebsite}` : rawWebsite;
-        document.getElementById('External Website').value = website;
-        document.getElementById('TeamReach').value = club.teamReach || '';
-        document.getElementById('Announcement').value = club.announcement || '';
-        document.getElementById('Announcement Expires').value = club.announcementExpires || '';
-        const annStatus = document.getElementById('announcement-status');
-        const removeBtn = document.getElementById('remove-announcement');
-        if (club.announcement) {
-          annStatus.hidden = false;
-          removeBtn.hidden = false;
-          if (club.announcementActive) {
-            annStatus.style.color = 'var(--success, #2a7d4f)';
-            annStatus.textContent = '✅ Currently visible to members.';
-          } else {
-            annStatus.style.color = 'var(--danger, #b91c1c)';
-            annStatus.textContent = '⛔ Expired — not showing to members.';
-          }
-        } else {
-          annStatus.hidden = true;
-          removeBtn.hidden = true;
-        }
-        document.getElementById('Hide Events').checked = !!club.hideEvents;
-        setMediaPreview('thumbnail', club.thumbnail, 'Current banner:');
-        setMediaPreview('flyer', club.promoFlyer, 'Current flyer:');
-        $('#status').hidden = true;
-        $('#status-top').hidden = true;
-      } catch (err) {
-        setStatus('error', `Couldn't load current values: ${err.message}`);
-      }
-    }
-    // --- Login gate -------------------------------------------------------
-    // Fields stay hidden until the leader's email is verified against the
-    // club's Leader Email on file. Switching the club (or editing the email)
-    // after logging in collapses back to the login step so a stale session
-    // can't edit the wrong club.
-    function setLoginStatus(kind, message) {
-      const el = $('#login-status');
-      if (!message) { el.hidden = true; return; }
-      el.hidden = false;
-      el.className = `form-status ${kind}`;
-      el.textContent = message;
-    }
-    function collapseToLogin() {
-      $('#edit-section').hidden = true;
-      $('#login-card').hidden = false;
-    }
-    function revealEditSection(clubName) {
-      $('#edit-banner-text').textContent = clubName ? `Editing: ${clubName}` : 'Editing your club';
-      $('#login-card').hidden = true;
-      $('#edit-section').hidden = false;
-    }
-
-    async function attemptLogin() {
-      const slug = resolveSlug();
-      const submitter_email = $('#submitter_email').value.trim();
-      if (!slug) { setLoginStatus('error', 'Pick your club from the list first.'); return; }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(submitter_email)) {
-        setLoginStatus('error', 'Enter a valid email address.');
-        return;
-      }
-      $('#login-btn').disabled = true;
-      setLoginStatus('success', 'Checking…');
-      try {
-        const res = await ClubsAPI.leaderVerify({ slug, submitter_email });
-        setLoginStatus('success', '');
-        await loadCurrentValues(slug);
-        revealEditSection(res.name);
-        rememberLogin(slug, submitter_email);
-        evmResetForm();
-        evmLoad();
-      } catch (err) {
-        setLoginStatus('error', err.message);
-      } finally {
-        $('#login-btn').disabled = false;
-      }
-    }
-    $('#login-btn').addEventListener('click', attemptLogin);
-    // Changing club or email after login drops back to the login step.
-    $('#club-search').addEventListener('input', () => {
-      const slug = resolveSlug();
-      collapseToLogin();
-      // Once the typed text resolves to a club, fill in its saved email (if any)
-      // so the leader only has to confirm, not retype.
-      const email = rememberedEmail(slug);
-      if (email) $('#submitter_email').value = email;
-    });
-    $('#submitter_email').addEventListener('change', collapseToLogin);
-    $('#switch-club').addEventListener('click', () => {
-      $('#club-search').value = '';
-      $('#slug').value = '';
-      $('#submitter_email').value = '';
-      collapseToLogin();
-      setLoginStatus('success', '');
-      evmResetForm();
-      $('#evm-list').innerHTML = '<div class="field-hint">Log in to load your events.</div>';
-    });
-
-    // Current-image previews for the banner + flyer uploads. Populated from the
-    // club's saved attachments on login, and swapped to an instant local preview
-    // the moment a leader picks a new file (before the upload round-trip).
-    function setMediaPreview(which, url, label) {
-      const wrap = document.getElementById(`${which}-preview`);
-      const img = document.getElementById(`${which}-preview-img`);
-      wrap.querySelector('.current-media-label').textContent = label;
-      if (url) { img.src = url; wrap.hidden = false; }
-      else { img.removeAttribute('src'); wrap.hidden = true; }
-    }
-    function showLocalPreview(which, file) {
-      if (!file) return;
-      setMediaPreview(which, URL.createObjectURL(file), 'New (uploading…):');
-    }
-    $('#thumbnail-file').addEventListener('change', (e) => showLocalPreview('thumbnail', e.target.files[0]));
-    $('#flyer-file').addEventListener('change', (e) => showLocalPreview('flyer', e.target.files[0]));
-
-    // Format-validate the email when the leader leaves the field. This is a
-    // syntax check only — we deliberately do NOT check it against our records
-    // here, since that would reveal whether a given address is the leader on
-    // file (the server returns a generic 403 on mismatch by design). The real
-    // match is verified server-side on save / upload / draft.
-    const emailInput = $('#submitter_email');
-    const emailHint = $('#email-hint');
-    emailInput.addEventListener('blur', () => {
-      const v = emailInput.value.trim();
-      if (!v) { emailHint.hidden = true; emailInput.removeAttribute('aria-invalid'); return; }
-      const looksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-      if (looksValid) {
-        emailHint.hidden = true;
-        emailInput.removeAttribute('aria-invalid');
-      } else {
-        emailHint.hidden = false;
-        emailHint.textContent = '⚠️ That doesn\'t look like a valid email address — please check it.';
-        emailHint.style.color = 'var(--danger)';
-        emailInput.setAttribute('aria-invalid', 'true');
-      }
-    });
-    // Clear the warning as soon as they start correcting it.
-    emailInput.addEventListener('input', () => {
-      if (!emailHint.hidden) { emailHint.hidden = true; emailInput.removeAttribute('aria-invalid'); }
-    });
-
-    // Show/Hide toggle for the masked email field.
-    const toggleVis = $('#toggle-email-visibility');
-    toggleVis.addEventListener('click', () => {
-      const masked = emailInput.type === 'password';
-      emailInput.type = masked ? 'email' : 'password';
-      toggleVis.textContent = masked ? 'Hide' : 'Show';
-      toggleVis.setAttribute('aria-label', masked ? 'Hide email' : 'Show email');
-      toggleVis.setAttribute('aria-pressed', String(masked));
-      emailInput.focus();
-    });
-
-    // Mirror the save status to both the top (under the edit banner) and bottom
-    // status lines, so feedback is visible whichever Save button was used.
-    function setStatus(kind, message) {
-      for (const id of ['status', 'status-top']) {
-        const el = document.getElementById(id);
-        el.hidden = false;
-        el.className = `form-status ${kind}`;
-        el.textContent = message;
-      }
-    }
-
-    // Thumbnail upload — independent of the main form save. Reads the chosen
-    // file as base64 and POSTs to the upload endpoint along with the slug +
-    // submitter email. Server-side email-match decides whether it succeeds.
-    function setThumbStatus(kind, message) {
-      const el = $('#thumbnail-status');
-      el.hidden = false;
-      el.className = `form-status ${kind}`;
-      el.textContent = message;
-    }
-    function readFileAsBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = () => reject(new Error('Could not read file'));
-        reader.onload = () => {
-          const result = String(reader.result || '');
-          // Data URL → strip the "data:...;base64," prefix.
-          const comma = result.indexOf(',');
-          resolve(comma >= 0 ? result.slice(comma + 1) : result);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-    $('#thumbnail-file').addEventListener('change', async (ev) => {
-      const file = ev.target.files?.[0];
-      if (!file) return;
-      const slug = $('#slug').value.trim();
-      const submitter_email = $('#submitter_email').value.trim();
-      if (!slug || !submitter_email) {
-        setThumbStatus('error', 'Pick your club and enter your email above before uploading.');
-        ev.target.value = '';
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        setThumbStatus('error', 'Image is over 5 MB. Try a smaller version.');
-        ev.target.value = '';
-        return;
-      }
-      setThumbStatus('success', 'Uploading…');
-      try {
-        const fileBase64 = await readFileAsBase64(file);
-        await ClubsAPI.leaderUploadThumbnail({
-          slug,
-          submitter_email,
-          filename: file.name,
-          contentType: file.type,
-          fileBase64,
-        });
-        setThumbStatus('success', 'Image uploaded — it will appear on your club card within a minute.');
-      } catch (err) {
-        setThumbStatus('error', err.message);
-      }
-    });
-
-    // Promo flyer upload — mirrors the thumbnail flow but targets the Promo Flyer field.
-    function setFlyerStatus(kind, message) {
-      const el = $('#flyer-status');
-      el.hidden = false;
-      el.className = `form-status ${kind}`;
-      el.textContent = message;
-    }
-    $('#flyer-file').addEventListener('change', async (ev) => {
-      const file = ev.target.files?.[0];
-      if (!file) return;
-      const slug = $('#slug').value.trim();
-      const submitter_email = $('#submitter_email').value.trim();
-      if (!slug || !submitter_email) {
-        setFlyerStatus('error', 'Pick your club and enter your email above before uploading.');
-        ev.target.value = '';
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        setFlyerStatus('error', 'Flyer is over 5 MB. Try a smaller version.');
-        ev.target.value = '';
-        return;
-      }
-      setFlyerStatus('success', 'Uploading…');
-      try {
-        const fileBase64 = await readFileAsBase64(file);
-        await ClubsAPI.leaderUploadFlyer({
-          slug,
-          submitter_email,
-          filename: file.name,
-          contentType: file.type,
-          fileBase64,
-        });
-        setFlyerStatus('success', 'Flyer uploaded — it will appear on your club page within a minute.');
-      } catch (err) {
-        setFlyerStatus('error', err.message);
-      }
-    });
-
-    // Remove an uploaded banner/flyer. The "Remove" button only shows while a
-    // current image exists (it lives inside the preview block, which is hidden
-    // when there's nothing to show).
-    async function removeMedia(which) {
-      const setStatusFn = which === 'flyer' ? setFlyerStatus : setThumbStatus;
-      const noun = which === 'flyer' ? 'promo flyer' : 'banner image';
-      const slug = $('#slug').value.trim();
-      const submitter_email = $('#submitter_email').value.trim();
-      if (!slug || !submitter_email) {
-        setStatusFn('error', 'Pick your club and enter your email above first.');
-        return;
-      }
-      if (!confirm(`Remove your ${noun}? You can upload a new one anytime.`)) return;
-      setStatusFn('success', 'Removing…');
-      try {
-        await ClubsAPI.leaderRemoveImage({ slug, submitter_email, target: which });
-        setMediaPreview(which, '', which === 'flyer' ? 'Current flyer:' : 'Current banner:');
-        setStatusFn('success', `${which === 'flyer' ? 'Flyer' : 'Banner'} removed — your page updates within a minute.`);
-      } catch (err) {
-        setStatusFn('error', err.message);
-      }
-    }
-    $('#thumbnail-remove').addEventListener('click', () => removeMedia('thumbnail'));
-    $('#flyer-remove').addEventListener('click', () => removeMedia('flyer'));
-
-    // AI promo email drafter.
-    function setDraftStatus(kind, message) {
-      const el = $('#draft-status');
-      el.hidden = false;
-      el.className = `form-status ${kind}`;
-      el.textContent = message;
-    }
-    $('#draft-email-btn').addEventListener('click', async () => {
-      const slug = $('#slug').value.trim();
-      const submitter_email = $('#submitter_email').value.trim();
-      if (!slug || !submitter_email) {
-        setDraftStatus('error', 'Pick your club and enter your email above first.');
-        return;
-      }
-      $('#draft-output').hidden = true;
-      $('#draft-email-btn').disabled = true;
-      setDraftStatus('success', 'Drafting… (takes a few seconds)');
-      try {
-        const context = $('#draft-context').value.trim();
-        const { subject, body } = await ClubsAPI.leaderDraftEmail({ slug, submitter_email, context });
-        $('#draft-subject').value = subject || '';
-        $('#draft-body').value = body || '';
-        $('#draft-output').hidden = false;
-        $('#draft-status').hidden = true;
-      } catch (err) {
-        setDraftStatus('error', err.message);
-      } finally {
-        $('#draft-email-btn').disabled = false;
-      }
-    });
-    $('#draft-open-mail').addEventListener('click', () => {
-      const subject = $('#draft-subject').value;
-      const body = $('#draft-body').value;
-      // Some mail clients (notably Outlook on Android) truncate long mailto
-      // bodies; the clipboard fallback is there for that case.
-      const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.location.href = mailto;
-    });
-    $('#draft-copy').addEventListener('click', async () => {
-      const subject = $('#draft-subject').value;
-      const body = $('#draft-body').value;
-      const text = `Subject: ${subject}\n\n${body}`;
-      try {
-        await navigator.clipboard.writeText(text);
-        const btn = $('#draft-copy');
-        const original = btn.textContent;
-        btn.textContent = 'Copied!';
-        setTimeout(() => { btn.textContent = original; }, 2000);
-      } catch (err) {
-        setDraftStatus('error', 'Could not copy. Select the text above manually.');
-      }
-    });
-
-    $('#leader-form').addEventListener('submit', async (ev) => {
-      ev.preventDefault();
-      const slug = $('#slug').value.trim();
-      const submitter_email = $('#submitter_email').value.trim();
-      if (!slug || !submitter_email) {
-        setStatus('error', 'Pick a club and enter your email.');
-        return;
-      }
-
-      const fields = {};
-      for (const id of STRING_FIELDS) {
-        const v = document.getElementById(id).value.trim();
-        if (v) fields[id] = v;
-      }
-      const tagsRaw = document.getElementById('Tags').value.trim();
-      if (tagsRaw) fields['Tags'] = tagsRaw.split(',').map((t) => t.trim()).filter(Boolean);
-      const memberCount = document.getElementById('Member Count').value.trim();
-      if (memberCount) fields['Member Count'] = Number(memberCount);
-      // Checkbox: always send the current state (true OR false) so leaders
-      // can toggle the opt-out either direction. The leader-update allowlist
-      // includes 'Hide Events'.
-      fields['Hide Events'] = document.getElementById('Hide Events').checked;
-
-      // Only one or fewer non-checkbox fields means the leader didn't intend
-      // to save anything substantive. (Hide Events alone is a valid save.)
-      if (Object.keys(fields).length === 0) {
-        setStatus('error', 'Fill in at least one field to update.');
-        return;
-      }
-
-      setStatus('success', 'Saving…');
-      try {
-        await ClubsAPI.leaderUpdate({ slug, submitter_email, fields });
-        setStatus('success', 'Saved! Your changes are live.');
-      } catch (err) {
-        setStatus('error', err.message);
-      }
-    });
-
-    // Remove announcement — clears both the text and expiry date immediately.
-    document.getElementById('remove-announcement').addEventListener('click', async () => {
-      const slug = $('#slug').value.trim();
-      const submitter_email = $('#submitter_email').value.trim();
-      if (!slug || !submitter_email) return;
-      setStatus('success', 'Removing announcement…');
-      try {
-        await ClubsAPI.leaderUpdate({ slug, submitter_email, fields: { 'Announcement': '', 'Announcement Expires': null } });
-        document.getElementById('Announcement').value = '';
-        document.getElementById('Announcement Expires').value = '';
-        document.getElementById('announcement-status').hidden = true;
-        document.getElementById('remove-announcement').hidden = true;
-        setStatus('success', 'Announcement removed.');
-      } catch (err) {
-        setStatus('error', err.message);
-      }
-    });
-
-    // Cancel buttons (top + bottom) — discard edits and return to the landing page.
-    function onCancel() { window.location.href = '/'; }
-    $('#cancel-top').addEventListener('click', onCancel);
-    $('#cancel-edit-top').addEventListener('click', onCancel);
-    $('#cancel-bottom').addEventListener('click', onCancel);
-
-    // --- RSVP setup section -----------------------------------------------
-    // Talks to the separate RSVP app via /api/leader-rsvp-setup. Opening the
-    // panel provisions this club's RSVP record (find-or-create) and loads state.
-    const rsvpDetails = document.querySelector('details.rsvp-setup');
-    let rsvpLoaded = false;
-    function setRsvpStatus(id, kind, message) {
-      const el = document.getElementById(id);
-      if (!message) { el.hidden = true; return; }
-      el.hidden = false;
-      el.className = `form-status ${kind}`;
-      el.textContent = message;
-    }
-    function rsvpRender(data) {
-      const sendEl = document.getElementById('rsvp-sending-state');
-      if (data.hasGmailPassword) {
-        sendEl.textContent = `✅ Sending from ${data.gmailUser}. You're ready to send invites.`;
-        sendEl.style.color = 'var(--success, #2a7d4f)';
-      } else {
-        sendEl.textContent = "⚠️ Sending is disabled until you add your club's Gmail App Password below.";
-        sendEl.style.color = 'var(--danger, #b91c1c)';
-      }
-      const gmailInput = document.getElementById('rsvp-gmail');
-      if (data.gmailUser && !gmailInput.value) gmailInput.value = data.gmailUser;
-      if (data.dashboardUrl) {
-        document.getElementById('rsvp-dashboard-block').hidden = false;
-        document.getElementById('rsvp-dashboard-link').href = data.dashboardUrl;
-      }
-    }
-    async function rsvpRefresh() {
-      const slug = $('#slug').value.trim();
-      const submitter_email = $('#submitter_email').value.trim();
-      if (!slug || !submitter_email) return;
-      setRsvpStatus('rsvp-status', 'success', 'Loading…');
-      try {
-        const data = await ClubsAPI.leaderRsvpSetup({ slug, submitter_email, action: 'status' });
-        rsvpRender(data);
-        setRsvpStatus('rsvp-status', 'success', '');
-      } catch (err) {
-        setRsvpStatus('rsvp-status', 'error', err.message);
-      }
-    }
-    rsvpDetails.addEventListener('toggle', () => {
-      if (rsvpDetails.open && !rsvpLoaded) { rsvpLoaded = true; rsvpRefresh(); }
-    });
-    // Switching club / editing the slug invalidates the loaded RSVP state.
-    function rsvpReset() { rsvpLoaded = false; rsvpDetails.open = false; }
-    $('#club-search').addEventListener('input', rsvpReset);
-    $('#switch-club').addEventListener('click', rsvpReset);
-
-    document.getElementById('rsvp-import-btn').addEventListener('click', async () => {
-      const slug = $('#slug').value.trim();
-      const submitter_email = $('#submitter_email').value.trim();
-      const emails = document.getElementById('rsvp-emails').value.trim();
-      if (!slug || !submitter_email) { setRsvpStatus('rsvp-import-status', 'error', 'Log in first.'); return; }
-      if (!emails) { setRsvpStatus('rsvp-import-status', 'error', 'Paste some email addresses first.'); return; }
-      const btn = document.getElementById('rsvp-import-btn');
-      btn.disabled = true;
-      setRsvpStatus('rsvp-import-status', 'success', 'Importing…');
-      try {
-        const r = await ClubsAPI.leaderRsvpSetup({ slug, submitter_email, action: 'import', emails });
-        const parts = [`Added ${r.added}`];
-        if (r.skippedDuplicates) parts.push(`skipped ${r.skippedDuplicates} already on the list`);
-        if (r.invalid) parts.push(`${r.invalid} not valid`);
-        setRsvpStatus('rsvp-import-status', 'success', parts.join(' · ') + '.');
-        document.getElementById('rsvp-emails').value = '';
-        rsvpRefresh();
-      } catch (err) {
-        setRsvpStatus('rsvp-import-status', 'error', err.message);
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    document.getElementById('rsvp-save-creds-btn').addEventListener('click', async () => {
-      const slug = $('#slug').value.trim();
-      const submitter_email = $('#submitter_email').value.trim();
-      const gmailUser = document.getElementById('rsvp-gmail').value.trim();
-      const appPassword = document.getElementById('rsvp-app-password').value;
-      if (!slug || !submitter_email) { setRsvpStatus('rsvp-creds-status', 'error', 'Log in first.'); return; }
-      if (!gmailUser || !appPassword) { setRsvpStatus('rsvp-creds-status', 'error', 'Enter your club Gmail and its App Password.'); return; }
-      const btn = document.getElementById('rsvp-save-creds-btn');
-      btn.disabled = true;
-      setRsvpStatus('rsvp-creds-status', 'success', 'Saving…');
-      try {
-        await ClubsAPI.leaderRsvpSetup({ slug, submitter_email, action: 'credentials', gmailUser, appPassword });
-        document.getElementById('rsvp-app-password').value = '';
-        setRsvpStatus('rsvp-creds-status', 'success', `Saved — your club now sends from ${gmailUser}.`);
-        rsvpRefresh();
-      } catch (err) {
-        setRsvpStatus('rsvp-creds-status', 'error', err.message);
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    // --- Club-run meeting events ------------------------------------------
-    // Manages the leader's own ClubEvents + EventOverrides via /api/leader-events
-    // (the server enforces that they only touch their own club's rows).
-    function evmStatus(kind, msg) {
-      const el = $('#evm-status');
-      if (!msg) { el.hidden = true; return; }
-      el.hidden = false; el.className = `form-status ${kind}`; el.textContent = msg;
-    }
-    let evmEvents = [], evmOverrides = [];
-    // The logged-in club's saved meeting info, used to pre-fill a new recurring
-    // event (set in loadCurrentValues, cleared in clearFormFields).
-    let evmClubDefaults = { name: '', day: '', time: '', location: '' };
-    const EVM_WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-    function evmScheduleText(ev) {
-      if (ev['Event Type'] === 'One-off') return `One-off · ${ev['Event Date'] || '(no date)'}`;
-      const r = ev['Recurrence'] || '', day = ev['Day'] || '';
-      if (r === 'Weekly') return `Every ${day}`;
-      if (r === 'Every other') return `Every other ${day}`;
-      if (r) return `${r} ${day} of the month`;
-      return day || '(no schedule)';
-    }
-    function evmTimeText(ev) {
-      const s = ev['Start Time'] || '', e = ev['End Time'] || '';
-      return s ? (e ? `${s}–${e}` : s) : '';
-    }
-    function renderEvmList() {
-      const wrap = $('#evm-list');
-      if (!evmEvents.length) { wrap.innerHTML = '<div class="field-hint">No meetings yet. Add your first one below.</div>'; return; }
-      wrap.innerHTML = evmEvents.map((ev) => {
-        const cancels = evmOverrides
-          .filter((o) => o.eventId === ev.id && o['Override Type'] === 'Cancel')
-          .map((o) => o['Date']).filter(Boolean);
-        const meta = `${evmScheduleText(ev)}${evmTimeText(ev) ? ' · ' + evmTimeText(ev) : ''}${ev['Location'] ? ' · ' + ev['Location'] : ''}`;
-        return `<div class="evm-item" data-id="${ev.id}">
-          <div class="evm-item-main">
-            <div class="evm-item-name">${escAttr(ev['Event Name'] || '')}</div>
-            <div class="evm-item-meta">${escAttr(meta)}</div>
-            ${cancels.length ? `<div class="evm-item-cancels">Cancelled: ${cancels.map(escAttr).join(', ')}</div>` : ''}
-          </div>
-          <div class="evm-item-actions">
-            <button class="btn btn-secondary btn-small" data-act="edit" type="button">Edit</button>
-            ${ev['Event Type'] !== 'One-off' ? '<button class="btn btn-secondary btn-small" data-act="cancel-date" type="button">Cancel a date</button>' : ''}
-            <button class="btn btn-secondary btn-small evm-del" data-act="delete" type="button">Delete</button>
-          </div>
-        </div>`;
-      }).join('');
-    }
-    async function evmLoad() {
-      const slug = $('#slug').value.trim(), submitter_email = $('#submitter_email').value.trim();
-      if (!slug || !submitter_email) return;
-      $('#evm-list').innerHTML = '<div class="field-hint">Loading…</div>';
-      try {
-        const r = await ClubsAPI.leaderEvents({ slug, submitter_email, action: 'list' });
-        evmEvents = r.events || []; evmOverrides = r.overrides || [];
-        renderEvmList();
-      } catch (err) {
-        $('#evm-list').innerHTML = `<div class="form-status error">${escAttr(err.message)}</div>`;
-      }
-    }
-    function evmTypeToggle() {
-      const recurring = $('#evm-type').value === 'Recurring';
-      $('#evm-recurring-fields').hidden = !recurring;
-      $('#evm-oneoff-fields').hidden = recurring;
-      // Clear whichever side is now hidden so switching modes leaves only the
-      // relevant fields — e.g. picking One-off clears the recurring fields.
-      if (recurring) {
-        $('#evm-date').value = '';
-      } else {
-        $('#evm-day').value = '';
-        $('#evm-recurrence').value = '';
-        $('#evm-refdate').value = '';
-      }
-      evmRefDateToggle();
-    }
-    function evmRefDateToggle() {
-      $('#evm-refdate-label').hidden = !($('#evm-type').value === 'Recurring' && $('#evm-recurrence').value === 'Every other');
-    }
-    function evmResetForm() {
-      $('#evm-edit-id').value = '';
-      for (const id of ['evm-name', 'evm-day', 'evm-recurrence', 'evm-refdate', 'evm-date', 'evm-start', 'evm-end', 'evm-location', 'evm-note']) {
-        document.getElementById(id).value = '';
-      }
-      $('#evm-type').value = 'Recurring';
-      // Pre-fill the recurring fields from the club's saved meeting info so a
-      // leader usually just confirms. Day only if it maps to a weekday option
-      // (a "Varies"/blank profile day stays empty). One-off clears these.
-      $('#evm-name').value = evmClubDefaults.name || '';
-      $('#evm-recurrence').value = 'Weekly';
-      $('#evm-day').value = EVM_WEEKDAYS.includes(evmClubDefaults.day) ? evmClubDefaults.day : '';
-      $('#evm-start').value = evmClubDefaults.time || '';
-      $('#evm-location').value = evmClubDefaults.location || '';
-      $('#evm-form-title').textContent = 'Add a meeting or event';
-      $('#evm-save').textContent = 'Add event';
-      $('#evm-cancel-edit').hidden = true;
-      evmTypeToggle();
-    }
-    function evmFillForm(ev) {
-      $('#evm-edit-id').value = ev.id;
-      $('#evm-type').value = ev['Event Type'] || 'Recurring';
-      $('#evm-name').value = ev['Event Name'] || '';
-      $('#evm-day').value = ev['Day'] || '';
-      $('#evm-recurrence').value = ev['Recurrence'] || '';
-      $('#evm-refdate').value = ev['Recurrence Reference Date'] || '';
-      $('#evm-date').value = ev['Event Date'] || '';
-      $('#evm-start').value = ev['Start Time'] || '';
-      $('#evm-end').value = ev['End Time'] || '';
-      $('#evm-location').value = ev['Location'] || '';
-      $('#evm-note').value = ev['Default Note'] || '';
-      $('#evm-form-title').textContent = 'Edit event';
-      $('#evm-save').textContent = 'Save changes';
-      $('#evm-cancel-edit').hidden = false;
-      evmTypeToggle();
-      $('#evm-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-    $('#evm-type').addEventListener('change', evmTypeToggle);
-    $('#evm-recurrence').addEventListener('change', evmRefDateToggle);
-    $('#evm-cancel-edit').addEventListener('click', evmResetForm);
-
-    $('#evm-list').addEventListener('click', async (e) => {
-      const btn = e.target.closest('button[data-act]');
-      if (!btn) return;
-      const id = btn.closest('.evm-item').getAttribute('data-id');
-      const ev = evmEvents.find((x) => x.id === id);
-      if (!ev) return;
-      const slug = $('#slug').value.trim(), submitter_email = $('#submitter_email').value.trim();
-      const act = btn.getAttribute('data-act');
-      if (act === 'edit') { evmFillForm(ev); return; }
-      if (act === 'delete') {
-        if (!confirm(`Delete "${ev['Event Name']}"? It will stop showing on the calendar.`)) return;
-        evmStatus('success', 'Deleting…');
-        try { await ClubsAPI.leaderEvents({ slug, submitter_email, action: 'delete', id }); evmStatus('success', ''); await evmLoad(); }
-        catch (err) { evmStatus('error', err.message); }
-      }
-      if (act === 'cancel-date') {
-        const date = prompt('Cancel this meeting on which date? (YYYY-MM-DD)');
-        if (!date) return;
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { evmStatus('error', 'Please use the format YYYY-MM-DD.'); return; }
-        evmStatus('success', 'Saving…');
-        try {
-          await ClubsAPI.leaderEvents({ slug, submitter_email, action: 'override', eventId: id, fields: { Date: date, 'Override Type': 'Cancel', Name: `Cancel ${ev['Event Name']} ${date}` } });
-          evmStatus('success', ''); await evmLoad();
-        } catch (err) { evmStatus('error', err.message); }
-      }
-    });
-
-    $('#evm-save').addEventListener('click', async () => {
-      const slug = $('#slug').value.trim(), submitter_email = $('#submitter_email').value.trim();
-      if (!slug || !submitter_email) { evmStatus('error', 'Log in first.'); return; }
-      const type = $('#evm-type').value;
-      const fields = {
-        'Event Name': $('#evm-name').value.trim(),
-        'Event Type': type,
-        'Start Time': $('#evm-start').value.trim(),
-        'End Time': $('#evm-end').value.trim(),
-        'Location': $('#evm-location').value.trim(),
-        'Default Note': $('#evm-note').value.trim(),
-      };
-      if (type === 'Recurring') {
-        fields['Day'] = $('#evm-day').value;
-        fields['Recurrence'] = $('#evm-recurrence').value;
-        if ($('#evm-recurrence').value === 'Every other') fields['Recurrence Reference Date'] = $('#evm-refdate').value;
-      } else {
-        fields['Event Date'] = $('#evm-date').value;
-      }
-      const editId = $('#evm-edit-id').value;
-      $('#evm-save').disabled = true;
-      evmStatus('success', editId ? 'Saving…' : 'Adding…');
-      try {
-        if (editId) await ClubsAPI.leaderEvents({ slug, submitter_email, action: 'update', id: editId, fields });
-        else await ClubsAPI.leaderEvents({ slug, submitter_email, action: 'create', fields });
-        evmStatus('success', 'Saved.');
-        evmResetForm();
-        await evmLoad();
-      } catch (err) { evmStatus('error', err.message); }
-      finally { $('#evm-save').disabled = false; }
-    });
-
-    populateClubs().then(initSavedLogin);
-  </script>
+  <script src="/leader-common.js"></script>
 </body>
 </html>

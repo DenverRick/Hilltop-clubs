@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#1d5fa8" />
+  <meta name="apple-mobile-web-app-title" content="Hilltop Clubs" />
+  <title>My Club — About</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1><a href="/">Hilltop Clubs</a></h1>
+    <div class="tagline">Club leader — update your listing</div>
+    <a class="btn btn-secondary btn-small header-launch" href="/" target="_blank" rel="noopener">Open hilltopclubs.org ↗</a>
+  </header>
+
+  <main>
+    <nav class="leader-nav">
+      <a class="leader-nav-link" data-path="/admin/leader" href="/admin/leader">📅 Meetings &amp; calendar</a>
+      <a class="leader-nav-link active" data-path="/admin/leader/about" href="/admin/leader/about">📝 About the club</a>
+      <a class="leader-nav-link" data-path="/admin/leader/outreach" href="/admin/leader/outreach">📣 Announcements &amp; outreach</a>
+      <a class="leader-nav-link" data-path="/admin/leader/help" href="/admin/leader/help">📖 Instructions</a>
+    </nav>
+
+    <p>
+      Pick your club and enter the email address management has on file for you,
+      then click <strong>Log in</strong>. Your club's description, photos, and
+      details appear — pre-filled with what's currently on your page.
+    </p>
+    <p class="helper-note">
+      Note: leaving a field blank keeps the existing value (it doesn't erase it).
+      If you actually want to clear a field, email Rick.
+    </p>
+    <p class="helper-note">
+      How your email is handled: it's never shown on your public club page or in
+      any listing. Residents reach you through an "I'm interested" button that
+      opens a message in their own mail app — so your address appears only in the
+      email they send to you, never displayed on the site itself.
+    </p>
+
+    <form class="leader-form" id="leader-form">
+      <div class="login-card" id="login-card">
+        <div class="login-card-title">Club leader sign-in</div>
+        <label>Club
+          <input id="club-search" list="club-list" placeholder="Start typing your club name…" autocomplete="off" />
+          <datalist id="club-list"></datalist>
+          <input type="hidden" id="slug" />
+          <span class="field-hint">Type a few letters of your club's name, then pick it from the list.</span>
+        </label>
+        <label>Club Leader's email (must match our records)
+          <div class="password-field">
+            <input id="submitter_email" type="email" required autocomplete="email" inputmode="email" />
+            <button type="button" id="toggle-email-visibility" class="visibility-toggle" aria-label="Hide email" aria-pressed="true">Hide</button>
+          </div>
+          <span id="email-hint" class="field-hint" hidden></span>
+        </label>
+        <div class="login-actions">
+          <button class="btn btn-primary" id="login-btn" type="button">Log in</button>
+          <button class="btn btn-secondary" id="cancel-top" type="button">Cancel</button>
+        </div>
+        <div id="login-status" class="form-status" hidden></div>
+        <button type="button" id="forget-logins" class="btn btn-secondary btn-small" hidden>Forget saved sign-ins on this device</button>
+      </div>
+
+      <div id="edit-section" hidden>
+        <div class="edit-banner">
+          <span id="edit-banner-text">Editing your club</span>
+          <div class="edit-banner-actions">
+            <button class="btn btn-primary btn-small" type="submit">Save changes</button>
+            <button class="btn btn-secondary btn-small" id="cancel-edit-top" type="button">Cancel</button>
+            <button class="btn btn-secondary btn-small" id="switch-club" type="button">Switch club</button>
+          </div>
+        </div>
+        <div id="status-top" class="form-status" hidden></div>
+
+        <label>Short blurb (one sentence for the club view)
+          <input id="Short Blurb" type="text" maxlength="160" />
+        </label>
+
+        <label>Long description
+          <textarea id="Long Description" rows="6"></textarea>
+        </label>
+
+        <label>Vibe / demographics (free-form — e.g., "30 members, mostly couples, drop-ins welcome")
+          <textarea id="Vibe / Demographics" rows="3"></textarea>
+        </label>
+
+        <label>What to bring (for first-time attendees — e.g., "Bring snacks and $10 buy-in", "Wear comfortable shoes, supplies provided", "Just yourself!")
+          <textarea id="What to Bring" rows="3"></textarea>
+        </label>
+
+        <label>Tags (comma-separated, e.g., "couples-friendly, drop-ins welcome, outdoors")
+          <input id="Tags" type="text" placeholder="couples-friendly, drop-ins welcome" />
+        </label>
+
+        <label>Member count (optional)
+          <input id="Member Count" type="number" min="0" />
+        </label>
+
+        <label>Thumbnail image (replaces your current banner — JPEG, PNG, or WebP, max 5 MB)
+          <div id="thumbnail-preview" class="current-media" hidden>
+            <span class="current-media-label">Current banner:</span>
+            <img id="thumbnail-preview-img" alt="Current banner" />
+            <button type="button" id="thumbnail-remove" class="btn-remove-media">Remove banner</button>
+          </div>
+          <input id="thumbnail-file" type="file" accept="image/jpeg,image/png,image/webp" />
+          <span class="field-hint"><strong>Photo policy:</strong> please don't upload images that show identifiable club members. We don't blur or anonymize uploaded photos — if a photo shows people, we'll ask you for a different one. Best options: a wide shot with no faces, an object/scene photo (equipment, location), or reply to Rick to have an AI banner generated for your review.</span>
+          <div id="thumbnail-status" class="form-status" hidden></div>
+        </label>
+
+        <label>Promo flyer (the same kind of one-pager you'd send to the newsletter — JPEG, PNG, or WebP, max 5 MB)
+          <div id="flyer-preview" class="current-media" hidden>
+            <span class="current-media-label">Current flyer:</span>
+            <img id="flyer-preview-img" alt="Current flyer" />
+            <button type="button" id="flyer-remove" class="btn-remove-media">Remove flyer</button>
+          </div>
+          <input id="flyer-file" type="file" accept="image/jpeg,image/png,image/webp" />
+          <span class="field-hint">Shown on your club's public page as a "📣 Latest from [your club]" callout. Replaces whatever's there now whenever you upload a new one.</span>
+          <div id="flyer-status" class="form-status" hidden></div>
+        </label>
+
+        <label>YouTube URLs (one per line)
+          <textarea id="YouTube URLs" rows="3" placeholder="https://www.youtube.com/watch?v=..."></textarea>
+        </label>
+
+        <label>External website
+          <input id="External Website" type="url" placeholder="https://" />
+        </label>
+
+        <label>TeamReach group code (optional)
+          <input id="TeamReach" type="text" placeholder="e.g. HSG2022" />
+        </label>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">Save changes</button>
+          <button class="btn btn-secondary" id="cancel-bottom" type="button">Cancel</button>
+        </div>
+        <div id="status" class="form-status" hidden></div>
+      </div><!-- /#edit-section -->
+    </form>
+  </main>
+
+  <footer class="site-footer">Hilltop at Inspiration · Aurora, CO</footer>
+
+  <script src="/api-client.js"></script>
+  <script src="/leader-common.js"></script>
+</body>
+</html>

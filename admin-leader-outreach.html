@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#1d5fa8" />
+  <meta name="apple-mobile-web-app-title" content="Hilltop Clubs" />
+  <title>My Club — Announcements &amp; Outreach</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1><a href="/">Hilltop Clubs</a></h1>
+    <div class="tagline">Club leader — update your listing</div>
+    <a class="btn btn-secondary btn-small header-launch" href="/" target="_blank" rel="noopener">Open hilltopclubs.org ↗</a>
+  </header>
+
+  <main>
+    <nav class="leader-nav">
+      <a class="leader-nav-link" data-path="/admin/leader" href="/admin/leader">📅 Meetings &amp; calendar</a>
+      <a class="leader-nav-link" data-path="/admin/leader/about" href="/admin/leader/about">📝 About the club</a>
+      <a class="leader-nav-link active" data-path="/admin/leader/outreach" href="/admin/leader/outreach">📣 Announcements &amp; outreach</a>
+      <a class="leader-nav-link" data-path="/admin/leader/help" href="/admin/leader/help">📖 Instructions</a>
+    </nav>
+
+    <p>
+      Pick your club and enter the email address management has on file for you,
+      then click <strong>Log in</strong>. Post a timely announcement, draft a
+      promo email, or set up RSVPs for your members.
+    </p>
+    <p class="helper-note">
+      How your email is handled: it's never shown on your public club page or in
+      any listing. Residents reach you through an "I'm interested" button that
+      opens a message in their own mail app — so your address appears only in the
+      email they send to you, never displayed on the site itself.
+    </p>
+
+    <form class="leader-form" id="leader-form">
+      <div class="login-card" id="login-card">
+        <div class="login-card-title">Club leader sign-in</div>
+        <label>Club
+          <input id="club-search" list="club-list" placeholder="Start typing your club name…" autocomplete="off" />
+          <datalist id="club-list"></datalist>
+          <input type="hidden" id="slug" />
+          <span class="field-hint">Type a few letters of your club's name, then pick it from the list.</span>
+        </label>
+        <label>Club Leader's email (must match our records)
+          <div class="password-field">
+            <input id="submitter_email" type="email" required autocomplete="email" inputmode="email" />
+            <button type="button" id="toggle-email-visibility" class="visibility-toggle" aria-label="Hide email" aria-pressed="true">Hide</button>
+          </div>
+          <span id="email-hint" class="field-hint" hidden></span>
+        </label>
+        <div class="login-actions">
+          <button class="btn btn-primary" id="login-btn" type="button">Log in</button>
+          <button class="btn btn-secondary" id="cancel-top" type="button">Cancel</button>
+        </div>
+        <div id="login-status" class="form-status" hidden></div>
+        <button type="button" id="forget-logins" class="btn btn-secondary btn-small" hidden>Forget saved sign-ins on this device</button>
+      </div>
+
+      <div id="edit-section" hidden>
+        <div class="edit-banner">
+          <span id="edit-banner-text">Editing your club</span>
+          <div class="edit-banner-actions">
+            <button class="btn btn-primary btn-small" type="submit">Save changes</button>
+            <button class="btn btn-secondary btn-small" id="cancel-edit-top" type="button">Cancel</button>
+            <button class="btn btn-secondary btn-small" id="switch-club" type="button">Switch club</button>
+          </div>
+        </div>
+        <div id="status-top" class="form-status" hidden></div>
+
+        <div class="announce-fields">
+          <label>📢 Announcement (optional — shows as a banner on your card and page)
+            <textarea id="Announcement" rows="2" maxlength="280" placeholder="e.g. Mon Jun 8: Quilt of Valor awards ceremony in M1 — all welcome, cake after!"></textarea>
+            <span class="field-hint">Great for a one-time event or notice. Set an expiry date below and it disappears on its own afterward — no need to come back and delete it.</span>
+          </label>
+          <div id="announcement-status" hidden style="margin:4px 0 8px; font-size:.875rem;"></div>
+          <label>Announcement expires (optional)
+            <input id="Announcement Expires" type="date" />
+            <span class="field-hint">After this date the announcement stops showing. Leave blank to keep showing it.</span>
+          </label>
+          <button type="button" id="remove-announcement" hidden class="btn btn-secondary btn-small" style="margin-top:4px; color:#b91c1c;">✕ Remove announcement</button>
+        </div>
+
+        <div class="ai-draft-section">
+          <label class="draft-context-label">What's this email about? <span class="optional-tag">(optional, but makes it much better)</span>
+            <textarea id="draft-context" rows="3" placeholder="e.g. This month Dr. Lee speaks on AI in medicine — bring questions. Or: we're recruiting new members for the fall season."></textarea>
+            <span class="field-hint">A sentence or two on the specific hook — the speaker, topic, occasion, or what you want residents to do. Claude can't know this on its own, so this is what stops the email from sounding generic.</span>
+          </label>
+          <button class="btn btn-secondary" id="draft-email-btn" type="button">✨ Draft a promo email about your next event</button>
+          <span class="field-hint">Email is drafted by Claude AI from your club's info and next upcoming event. Review before sending. Opens in your mail app — your members are not contacted directly from this page.</span>
+          <div id="draft-status" class="form-status" hidden></div>
+          <div id="draft-output" class="draft-output" hidden>
+            <div class="draft-label">Subject</div>
+            <input class="draft-subject" id="draft-subject" type="text" readonly />
+            <div class="draft-label">Body</div>
+            <textarea class="draft-body" id="draft-body" rows="10" readonly></textarea>
+            <div class="draft-actions">
+              <button class="btn btn-primary" id="draft-open-mail" type="button">Open in mail app</button>
+              <button class="btn btn-secondary" id="draft-copy" type="button">Copy to clipboard</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RSVP setup. Talks to the separate RSVP app via /api/leader-rsvp-setup.
+             Collapsed by default; opening it provisions this club's RSVP record. -->
+        <details class="rsvp-setup">
+          <summary><strong>📋 RSVP — collect attendance</strong> <span class="optional-tag">(optional)</span></summary>
+          <p class="field-hint" style="margin-top:8px;">
+            Instead of email/TeamReach replies, send members a one-tap RSVP link and watch a live
+            headcount. Set this up once, then manage events from your RSVP dashboard.
+          </p>
+          <div id="rsvp-status" class="form-status" hidden></div>
+
+          <div class="rsvp-block">
+            <div class="rsvp-block-title">1. Your members</div>
+            <label>Paste member email addresses (any separator — commas, spaces, or one per line)
+              <textarea id="rsvp-emails" rows="4" placeholder="alice@example.com, bob@example.com&#10;carol@example.com"></textarea>
+            </label>
+            <button class="btn btn-secondary" id="rsvp-import-btn" type="button">Import members</button>
+            <div id="rsvp-import-status" class="form-status" hidden></div>
+          </div>
+
+          <div class="rsvp-block">
+            <div class="rsvp-block-title">2. Your club's sending email</div>
+            <p class="field-hint" id="rsvp-sending-state">Invites send from this address. Required before you can send.</p>
+            <label>Club Gmail address
+              <input id="rsvp-gmail" type="email" inputmode="email" placeholder="yourclub@gmail.com" />
+            </label>
+            <label>Gmail App Password
+              <input id="rsvp-app-password" type="password" autocomplete="off" placeholder="16-character app password" />
+            </label>
+            <details class="rsvp-help">
+              <summary class="field-hint">How do I get an App Password?</summary>
+              <ol class="field-hint" style="margin:6px 0 0; padding-left:18px;">
+                <li>Sign in to your club's Gmail, then turn on <strong>2-Step Verification</strong>
+                    (Google Account → Security).</li>
+                <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">myaccount.google.com/apppasswords</a>,
+                    create one named "RSVP", and copy the 16-character code.</li>
+                <li>Paste it above and save. We store it encrypted — never in plain text.</li>
+              </ol>
+            </details>
+            <button class="btn btn-secondary" id="rsvp-save-creds-btn" type="button">Save sending email</button>
+            <div id="rsvp-creds-status" class="form-status" hidden></div>
+          </div>
+
+          <div class="rsvp-block" id="rsvp-dashboard-block" hidden>
+            <div class="rsvp-block-title">3. Your RSVP dashboard</div>
+            <p class="field-hint">Set your event and send invites here (bookmark it):</p>
+            <a id="rsvp-dashboard-link" href="#" target="_blank" rel="noopener">Open my RSVP dashboard ↗</a>
+          </div>
+        </details>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">Save changes</button>
+          <button class="btn btn-secondary" id="cancel-bottom" type="button">Cancel</button>
+        </div>
+        <div id="status" class="form-status" hidden></div>
+      </div><!-- /#edit-section -->
+    </form>
+  </main>
+
+  <footer class="site-footer">Hilltop at Inspiration · Aurora, CO</footer>
+
+  <script src="/api-client.js"></script>
+  <script src="/leader-common.js"></script>
+</body>
+</html>
