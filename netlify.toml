@@ -61,6 +61,11 @@
   to = "/admin-leader-help.html"
   status = 200
 
+[[redirects]]
+  from = "/admin/newsletter"
+  to = "/admin-newsletter.html"
+  status = 200
+
 # API → Netlify functions
 [[redirects]]
   from = "/api/*"
