@@ -122,11 +122,13 @@ function clearFormFields() {
   setMediaPreview('flyer', '', 'Current flyer:');
   setVal('draft-context', '');
 }
+let clubLeaderName = '';   // from Airtable; used to sign off the member RSVP emails
 async function loadCurrentValues(slug) {
   if (!slug) { clearFormFields(); return; }
   setStatus('success', 'Loading current values…');
   try {
     const { club } = await ClubsAPI.getClub(slug);
+    clubLeaderName = club.leaderName || '';
     setVal('Short Blurb', club.blurb || '');
     setVal('Long Description', club.description || '');
     setVal('Vibe / Demographics', club.vibe || '');
@@ -473,10 +475,11 @@ on('#rsvp-import-btn', 'click', async () => {
   } catch (err) { setRsvpStatus('rsvp-import-status', 'error', err.message); }
   finally { if (btn) btn.disabled = false; }
 });
-// Draft the one-time "Introducing RSVP" email in the leader's OWN mail app.
-// To = the leader (a copy in their inbox); BCC = the pasted members (hidden from
-// each other). The RSVP app returns no member list, so the textarea is the source.
-on('#rsvp-email-members-btn', 'click', () => {
+// Draft a member email in the leader's OWN mail app. To = the leader (a copy in
+// their inbox); BCC = the pasted members (hidden from each other). The RSVP app
+// returns no member list, so the textarea is the source. Club name + sign-off
+// are filled from Airtable (clubLeaderName, set in loadCurrentValues).
+function draftMemberEmail(buildSubject, buildBody) {
   const submitter_email = getVal('submitter_email').trim();
   const bcc = getVal('rsvp-emails').split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean).join(',');
   if (!bcc) {
@@ -484,8 +487,17 @@ on('#rsvp-email-members-btn', 'click', () => {
     return;
   }
   const clubName = slugToName.get(getVal('slug')) || 'our club';
-  const subject = `Introducing one-tap RSVP for ${clubName}`;
-  const body = `Hi ${clubName} members,
+  const signoff = clubLeaderName || '[Your name]';
+  const subject = buildSubject({ clubName, signoff });
+  const body = buildBody({ clubName, signoff });
+  window.location.href =
+    `mailto:${encodeURIComponent(submitter_email)}?bcc=${encodeURIComponent(bcc)}` +
+    `&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+// The one-time "we're starting RSVP" announcement.
+on('#rsvp-email-members-btn', 'click', () => draftMemberEmail(
+  ({ clubName }) => `Introducing one-tap RSVP for ${clubName}`,
+  ({ clubName, signoff }) => `Hi ${clubName} members,
 
 We're trying something new to make RSVPs easier. Instead of replying to an email or responding on TeamReach, you'll get a personal link that lets you RSVP in one tap — and I can see the headcount update in real time.
 
@@ -498,11 +510,18 @@ The email will have a link just for you. One click to say you're coming, one cli
 I'll send the RSVP link in the next day or two. Keep an eye out for it, and check spam if you don't see it.
 
 Thanks —
-[Your name]`;
-  window.location.href =
-    `mailto:${encodeURIComponent(submitter_email)}?bcc=${encodeURIComponent(bcc)}` +
-    `&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-});
+${signoff}`));
+// The short evergreen "how to handle RSVP" note — good now or for new members.
+on('#rsvp-howto-btn', 'click', () => draftMemberEmail(
+  ({ clubName }) => `How RSVP works for ${clubName}`,
+  ({ clubName, signoff }) => `Hi ${clubName} members,
+
+For our events you'll get an email from HilltopClubs2026@gmail.com with a link that's just for you. Tap it, then tap "I'm coming" or "Can't make it" — no password, no app. Changed your mind? Open the email again and tap the other one.
+
+First time, check your spam folder and click "Not Spam" so future ones reach your inbox.
+
+Thanks —
+${signoff}`));
 
 // ---- club-run meeting events (Meetings page) ----
 let evmEvents = [], evmOverrides = [];
