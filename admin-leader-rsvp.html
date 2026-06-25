@@ -9,7 +9,7 @@
   <link rel="manifest" href="/site.webmanifest" />
   <meta name="theme-color" content="#1d5fa8" />
   <meta name="apple-mobile-web-app-title" content="Hilltop Clubs" />
-  <title>My Club — Announcements &amp; Email</title>
+  <title>My Club — Member RSVP</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -23,15 +23,15 @@
     <nav class="leader-nav">
       <a class="leader-nav-link" data-path="/admin/leader" href="/admin/leader">📅 Meetings &amp; calendar</a>
       <a class="leader-nav-link" data-path="/admin/leader/about" href="/admin/leader/about">📝 About the club</a>
-      <a class="leader-nav-link" data-path="/admin/leader/rsvp" href="/admin/leader/rsvp">📋 Member RSVP</a>
-      <a class="leader-nav-link active" data-path="/admin/leader/outreach" href="/admin/leader/outreach">📣 Announcements &amp; Email</a>
+      <a class="leader-nav-link active" data-path="/admin/leader/rsvp" href="/admin/leader/rsvp">📋 Member RSVP</a>
+      <a class="leader-nav-link" data-path="/admin/leader/outreach" href="/admin/leader/outreach">📣 Announcements &amp; Email</a>
       <a class="leader-nav-link" data-path="/admin/leader/help" href="/admin/leader/help">📖 Instructions</a>
     </nav>
 
     <p>
       Pick your club and enter the email address management has on file for you,
-      then click <strong>Log in</strong>. Post a timely announcement or draft a
-      promo email.
+      then click <strong>Log in</strong>. Then send members a one-tap RSVP link
+      and watch a live headcount — no more chasing email or TeamReach replies.
     </p>
     <p class="helper-note">
       How your email is handled: it's never shown on your public club page or in
@@ -68,50 +68,42 @@
         <div class="edit-banner">
           <span id="edit-banner-text">Editing your club</span>
           <div class="edit-banner-actions">
-            <button class="btn btn-primary btn-small" type="submit">Save changes</button>
             <button class="btn btn-secondary btn-small" id="cancel-edit-top" type="button">Cancel</button>
             <button class="btn btn-secondary btn-small" id="switch-club" type="button">Switch club</button>
           </div>
         </div>
         <div id="status-top" class="form-status" hidden></div>
 
-        <div class="announce-fields">
-          <label>📢 Announcement (optional — shows as a banner on your card and page)
-            <textarea id="Announcement" rows="2" maxlength="280" placeholder="e.g. Mon Jun 8: Quilt of Valor awards ceremony in M1 — all welcome, cake after!"></textarea>
-            <span class="field-hint">Great for a one-time event or notice. Set an expiry date below and it disappears on its own afterward — no need to come back and delete it.</span>
-          </label>
-          <div id="announcement-status" hidden style="margin:4px 0 8px; font-size:.875rem;"></div>
-          <label>Announcement expires (optional)
-            <input id="Announcement Expires" type="date" />
-            <span class="field-hint">After this date the announcement stops showing. Leave blank to keep showing it.</span>
-          </label>
-          <button type="button" id="remove-announcement" hidden class="btn btn-secondary btn-small" style="margin-top:4px; color:#b91c1c;">✕ Remove announcement</button>
-        </div>
+        <!-- RSVP setup. Talks to the separate RSVP app via /api/leader-rsvp-setup.
+             Logging in provisions this club's RSVP record (rsvpRefresh on login). -->
+        <section class="rsvp-setup">
+          <h2 style="margin:0 0 4px; font-size:1.1rem;">📋 Member RSVP — collect attendance</h2>
+          <p class="field-hint" style="margin-top:0;">
+            Instead of email/TeamReach replies, send members a one-tap RSVP link and watch a live
+            headcount. Set this up once, then manage events from your RSVP dashboard.
+          </p>
+          <div id="rsvp-status" class="form-status" hidden></div>
 
-        <div class="ai-draft-section">
-          <label class="draft-context-label">What's this email about? <span class="optional-tag">(optional, but makes it much better)</span>
-            <textarea id="draft-context" rows="3" placeholder="e.g. This month Dr. Lee speaks on AI in medicine — bring questions. Or: we're recruiting new members for the fall season."></textarea>
-            <span class="field-hint">A sentence or two on the specific hook — the speaker, topic, occasion, or what you want residents to do. Claude can't know this on its own, so this is what stops the email from sounding generic.</span>
-          </label>
-          <button class="btn btn-secondary" id="draft-email-btn" type="button">✨ Draft a promo email about your next event</button>
-          <span class="field-hint">Email is drafted by Claude AI from your club's info and next upcoming event. Review before sending. Opens in your mail app — your members are not contacted directly from this page.</span>
-          <div id="draft-status" class="form-status" hidden></div>
-          <div id="draft-output" class="draft-output" hidden>
-            <div class="draft-label">Subject</div>
-            <input class="draft-subject" id="draft-subject" type="text" readonly />
-            <div class="draft-label">Body</div>
-            <textarea class="draft-body" id="draft-body" rows="10" readonly></textarea>
-            <div class="draft-actions">
-              <button class="btn btn-primary" id="draft-open-mail" type="button">Open in mail app</button>
-              <button class="btn btn-secondary" id="draft-copy" type="button">Copy to clipboard</button>
+          <div class="rsvp-block">
+            <div class="rsvp-block-title">1. Your members</div>
+            <label>Paste member email addresses (any separator — commas, spaces, or one per line)
+              <textarea id="rsvp-emails" rows="4" placeholder="alice@example.com, bob@example.com&#10;carol@example.com"></textarea>
+            </label>
+            <div class="rsvp-actions" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
+              <button class="btn btn-secondary" id="rsvp-import-btn" type="button">Import members</button>
+              <button class="btn btn-secondary" id="rsvp-email-members-btn" type="button">Email members about RSVP</button>
             </div>
+            <span class="field-hint">"Email members about RSVP" opens a ready-to-edit intro email in your own mail app, with the members above as BCC.</span>
+            <div id="rsvp-import-status" class="form-status" hidden></div>
           </div>
-        </div>
 
-        <div class="form-actions">
-          <button class="btn btn-primary" type="submit">Save changes</button>
-          <button class="btn btn-secondary" id="cancel-bottom" type="button">Cancel</button>
-        </div>
+          <div class="rsvp-block" id="rsvp-dashboard-block" hidden>
+            <div class="rsvp-block-title">2. Your RSVP dashboard</div>
+            <p class="field-hint">Set your event and send invites here (bookmark it):</p>
+            <a id="rsvp-dashboard-link" href="#" target="_blank" rel="noopener">Open my RSVP dashboard ↗</a>
+          </div>
+        </section>
+
         <div id="status" class="form-status" hidden></div>
       </div><!-- /#edit-section -->
     </form>

@@ -52,6 +52,11 @@
   status = 200
 
 [[redirects]]
+  from = "/admin/leader/rsvp"
+  to = "/admin-leader-rsvp.html"
+  status = 200
+
+[[redirects]]
   from = "/admin/leader/outreach"
   to = "/admin-leader-outreach.html"
   status = 200

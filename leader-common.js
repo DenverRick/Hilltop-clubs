@@ -212,6 +212,7 @@ async function attemptLogin() {
     revealEditSection(res.name);
     rememberLogin(slug, submitter_email);
     if (el('evm-form')) { evmResetForm(); evmLoad(); }
+    if (el('rsvp-emails')) rsvpRefresh();   // RSVP page: block is expanded, no toggle to lazy-load it
   } catch (err) {
     setLoginStatus('error', err.message);
   } finally {
@@ -467,10 +468,40 @@ on('#rsvp-import-btn', 'click', async () => {
     if (r.skippedDuplicates) parts.push(`skipped ${r.skippedDuplicates} already on the list`);
     if (r.invalid) parts.push(`${r.invalid} not valid`);
     setRsvpStatus('rsvp-import-status', 'success', parts.join(' · ') + '.');
-    setVal('rsvp-emails', '');
+    // Keep the pasted list in the box so "Email members about RSVP" can BCC it.
     rsvpRefresh();
   } catch (err) { setRsvpStatus('rsvp-import-status', 'error', err.message); }
   finally { if (btn) btn.disabled = false; }
+});
+// Draft the one-time "Introducing RSVP" email in the leader's OWN mail app.
+// To = the leader (a copy in their inbox); BCC = the pasted members (hidden from
+// each other). The RSVP app returns no member list, so the textarea is the source.
+on('#rsvp-email-members-btn', 'click', () => {
+  const submitter_email = getVal('submitter_email').trim();
+  const bcc = getVal('rsvp-emails').split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean).join(',');
+  if (!bcc) {
+    setRsvpStatus('rsvp-import-status', 'error', "Paste your members' emails above first, then click this to draft the email.");
+    return;
+  }
+  const clubName = slugToName.get(getVal('slug')) || 'our club';
+  const subject = `Introducing one-tap RSVP for ${clubName}`;
+  const body = `Hi ${clubName} members,
+
+We're trying something new to make RSVPs easier. Instead of replying to an email or responding on TeamReach, you'll get a personal link that lets you RSVP in one tap — and I can see the headcount update in real time.
+
+Here's what to expect:
+
+You'll receive an email from HilltopClubs2026@gmail.com with the subject line "${clubName} — RSVP for [event]." It may land in your spam folder the first time. If it does, please open it and click "Not Spam" — that tells Gmail it's safe, and future emails will go straight to your inbox.
+
+The email will have a link just for you. One click to say you're coming, one click if you can't make it. That's it — no login, no account, no app to install.
+
+I'll send the RSVP link in the next day or two. Keep an eye out for it, and check spam if you don't see it.
+
+Thanks —
+[Your name]`;
+  window.location.href =
+    `mailto:${encodeURIComponent(submitter_email)}?bcc=${encodeURIComponent(bcc)}` +
+    `&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 });
 
 // ---- club-run meeting events (Meetings page) ----
