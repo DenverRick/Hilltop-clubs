@@ -432,18 +432,6 @@ function setRsvpStatus(id, kind, message) {
   e.hidden = false; e.className = `form-status ${kind}`; e.textContent = message;
 }
 function rsvpRender(data) {
-  const sendEl = el('rsvp-sending-state');
-  if (sendEl) {
-    if (data.hasGmailPassword) {
-      sendEl.textContent = `✅ Sending from ${data.gmailUser}. You're ready to send invites.`;
-      sendEl.style.color = 'var(--success, #2a7d4f)';
-    } else {
-      sendEl.textContent = "⚠️ Sending is disabled until you add your club's Gmail App Password below.";
-      sendEl.style.color = 'var(--danger, #b91c1c)';
-    }
-  }
-  const gmailInput = el('rsvp-gmail');
-  if (gmailInput && data.gmailUser && !gmailInput.value) gmailInput.value = data.gmailUser;
   if (data.dashboardUrl) {
     hide('rsvp-dashboard-block', false);
     const link = el('rsvp-dashboard-link'); if (link) link.href = data.dashboardUrl;
@@ -482,23 +470,6 @@ on('#rsvp-import-btn', 'click', async () => {
     setVal('rsvp-emails', '');
     rsvpRefresh();
   } catch (err) { setRsvpStatus('rsvp-import-status', 'error', err.message); }
-  finally { if (btn) btn.disabled = false; }
-});
-on('#rsvp-save-creds-btn', 'click', async () => {
-  const slug = getVal('slug').trim();
-  const submitter_email = getVal('submitter_email').trim();
-  const gmailUser = getVal('rsvp-gmail').trim();
-  const appPassword = getVal('rsvp-app-password');
-  if (!slug || !submitter_email) { setRsvpStatus('rsvp-creds-status', 'error', 'Log in first.'); return; }
-  if (!gmailUser || !appPassword) { setRsvpStatus('rsvp-creds-status', 'error', 'Enter your club Gmail and its App Password.'); return; }
-  const btn = el('rsvp-save-creds-btn'); if (btn) btn.disabled = true;
-  setRsvpStatus('rsvp-creds-status', 'success', 'Saving…');
-  try {
-    await ClubsAPI.leaderRsvpSetup({ slug, submitter_email, action: 'credentials', gmailUser, appPassword });
-    setVal('rsvp-app-password', '');
-    setRsvpStatus('rsvp-creds-status', 'success', `Saved — your club now sends from ${gmailUser}.`);
-    rsvpRefresh();
-  } catch (err) { setRsvpStatus('rsvp-creds-status', 'error', err.message); }
   finally { if (btn) btn.disabled = false; }
 });
 
