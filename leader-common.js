@@ -497,6 +497,60 @@ on('#rsvp-import-btn', 'click', async () => {
   } catch (err) { setRsvpStatus('rsvp-import-status', 'error', err.message); }
   finally { if (btn) btn.disabled = false; }
 });
+
+// ---- spreadsheet upload: parse .xlsx/.csv in the browser, fill the paste box ----
+// SheetJS is ~900 KB, so it's vendored at /xlsx.full.min.js and loaded only on
+// first use. The file just populates #rsvp-emails — the leader still reviews and
+// clicks "Import members", reusing the existing import path unchanged.
+let xlsxLoading = null;
+function loadXlsxOnce() {
+  if (window.XLSX) return Promise.resolve();
+  if (xlsxLoading) return xlsxLoading;
+  xlsxLoading = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = '/xlsx.full.min.js';
+    s.onload = () => resolve();
+    s.onerror = () => { xlsxLoading = null; reject(new Error('Could not load the spreadsheet reader. Check your connection and try again.')); };
+    document.head.appendChild(s);
+  });
+  return xlsxLoading;
+}
+const RSVP_FILE_EMAIL_RE = /[^\s,;<>"']+@[^\s,;<>"']+\.[^\s,;<>"']+/g;
+function emailsFromWorkbook(wb) {
+  const seen = new Set();
+  for (const name of wb.SheetNames) {
+    const text = XLSX.utils.sheet_to_csv(wb.Sheets[name]);
+    for (const m of text.match(RSVP_FILE_EMAIL_RE) || []) {
+      const e = m.trim().toLowerCase();
+      if (e) seen.add(e);
+    }
+  }
+  return [...seen];
+}
+on('#rsvp-file-btn', 'click', () => { const f = el('rsvp-file'); if (f) f.click(); });
+on('#rsvp-file', 'change', async (ev) => {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  setRsvpStatus('rsvp-import-status', 'success', `Reading ${file.name}…`);
+  try {
+    await loadXlsxOnce();
+    const wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: 'array' });
+    const emails = emailsFromWorkbook(wb);
+    if (!emails.length) {
+      setRsvpStatus('rsvp-import-status', 'error', `No email addresses found in ${file.name}.`);
+      return;
+    }
+    const box = el('rsvp-emails');
+    if (box) box.value = emails.join('\n');
+    setRsvpStatus('rsvp-import-status', 'success',
+      `Loaded ${emails.length} address${emails.length === 1 ? '' : 'es'} from ${file.name} — review, then click Import members.`);
+  } catch (err) {
+    setRsvpStatus('rsvp-import-status', 'error', err.message || 'Could not read that file.');
+  } finally {
+    ev.target.value = '';   // let the same file be re-selected
+  }
+});
+
 // Draft a member email in the leader's OWN mail app. To = the leader (a copy in
 // their inbox); BCC = the pasted members (hidden from each other). The RSVP app
 // returns no member list, so the textarea is the source. Club name + sign-off

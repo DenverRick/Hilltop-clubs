@@ -91,6 +91,8 @@
               <textarea id="rsvp-emails" rows="4" placeholder="alice@example.com, bob@example.com&#10;carol@example.com"></textarea>
             </label>
             <div class="rsvp-actions" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
+              <input type="file" id="rsvp-file" accept=".xlsx,.xls,.csv" hidden>
+              <button class="btn btn-secondary" id="rsvp-file-btn" type="button">Upload spreadsheet (.xlsx / .csv)</button>
               <button class="btn btn-secondary" id="rsvp-import-btn" type="button">Import members</button>
               <button class="btn btn-secondary" id="rsvp-email-members-btn" type="button">Email members about RSVP</button>
               <button class="btn btn-secondary" id="rsvp-howto-btn" type="button">Email members how to RSVP</button>
