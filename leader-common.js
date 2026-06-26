@@ -428,6 +428,7 @@ on('#cancel-bottom', 'click', onCancel);
 // ---- RSVP setup (Outreach page) ----
 const rsvpDetails = document.querySelector('details.rsvp-setup');
 let rsvpLoaded = false;
+let rsvpMemberCount = 0;   // last-known count from the RSVP app; drives the "already imported" line + email-button help
 function setRsvpStatus(id, kind, message) {
   const e = el(id);
   if (!e) return;
@@ -438,6 +439,22 @@ function rsvpRender(data) {
   if (data.dashboardUrl) {
     hide('rsvp-dashboard-block', false);
     const link = el('rsvp-dashboard-link'); if (link) link.href = data.dashboardUrl;
+  }
+  // The RSVP app reports how many members it already has (but never the list
+  // itself — privacy). Show the count so a returning leader knows they're set
+  // up, and so the empty paste box doesn't read as "no members yet."
+  rsvpMemberCount = Number(data.memberCount) || 0;
+  const countEl = el('rsvp-member-count');
+  if (countEl) {
+    if (rsvpMemberCount > 0) {
+      countEl.hidden = false;
+      countEl.className = 'form-status success';
+      countEl.textContent =
+        `✅ ${rsvpMemberCount} member${rsvpMemberCount === 1 ? '' : 's'} already imported. ` +
+        `Paste addresses below only to add new ones — duplicates are skipped automatically.`;
+    } else {
+      countEl.hidden = true;
+    }
   }
 }
 async function rsvpRefresh() {
@@ -453,7 +470,12 @@ async function rsvpRefresh() {
 if (rsvpDetails) {
   rsvpDetails.addEventListener('toggle', () => { if (rsvpDetails.open && !rsvpLoaded) { rsvpLoaded = true; rsvpRefresh(); } });
 }
-function rsvpReset() { rsvpLoaded = false; if (rsvpDetails) rsvpDetails.open = false; }
+function rsvpReset() {
+  rsvpLoaded = false;
+  rsvpMemberCount = 0;
+  hide('rsvp-member-count', true);
+  if (rsvpDetails) rsvpDetails.open = false;
+}
 on('#club-search', 'input', rsvpReset);
 on('#switch-club', 'click', rsvpReset);
 on('#rsvp-import-btn', 'click', async () => {
@@ -483,7 +505,14 @@ function draftMemberEmail(buildSubject, buildBody) {
   const submitter_email = getVal('submitter_email').trim();
   const bcc = getVal('rsvp-emails').split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean).join(',');
   if (!bcc) {
-    setRsvpStatus('rsvp-import-status', 'error', "Paste your members' emails above first, then click this to draft the email.");
+    // The email goes to the members in the box above — but for privacy the RSVP
+    // app never sends the saved list back here, so an already-imported leader
+    // still has to paste the addresses in to email them. Say so explicitly.
+    const noun = rsvpMemberCount === 1 ? '1 member is' : `${rsvpMemberCount} members are`;
+    const msg = rsvpMemberCount > 0
+      ? `Your ${noun} imported, but for privacy their addresses aren't kept on this page. Paste the list back in above, then click this to email them.`
+      : "Paste your members' emails above first, then click this to draft the email.";
+    setRsvpStatus('rsvp-import-status', 'error', msg);
     return;
   }
   const clubName = slugToName.get(getVal('slug')) || 'our club';
