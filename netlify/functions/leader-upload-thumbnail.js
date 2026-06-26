@@ -77,5 +77,15 @@ export async function handler(event) {
     return json(res.status, { error: `Upload failed: ${reason}`, details: data });
   }
 
+  // Stamp "Last Updated" so a fresh thumbnail surfaces the club in the landing
+  // page's "New Information" section — same dateTime the text-save form sets
+  // (see leader-update.js). Best-effort: the image is already uploaded, so a
+  // failed stamp shouldn't fail the request.
+  await airtableFetch(`${e.baseId}/${e.tableClubs}/${record.id}`, {
+    token: e.token,
+    method: 'PATCH',
+    body: { fields: { 'Last Updated': new Date().toISOString() } },
+  });
+
   return json(200, { ok: true });
 }
