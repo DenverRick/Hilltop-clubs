@@ -15,7 +15,7 @@ import { preflight, json, env, airtableFetch, escapeFormulaString } from './_air
 
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB. Netlify sync function payload limit is ~6 MB.
-const THUMBNAIL_FIELD_ID = 'fldQQOaKB4AeTQC6k'; // Clubs.Thumbnail Image
+const THUMBNAIL_FIELD_ID = 'fldoEn5p1Y1lp3WNa'; // Clubs.Thumbnail Image
 
 const normalize = (s) => String(s || '').trim().toLowerCase();
 

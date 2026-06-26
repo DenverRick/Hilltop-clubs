@@ -15,7 +15,7 @@ import { preflight, json, env, airtableFetch, escapeFormulaString } from './_air
 
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB. Netlify sync function payload limit is ~6 MB.
-const PROMO_FLYER_FIELD_ID = 'fldVuVBqdw7eDVxvT'; // Clubs.Promo Flyer
+const PROMO_FLYER_FIELD_ID = 'fldGm6YN2ibB3YkRM'; // Clubs.Promo Flyer
 
 const normalize = (s) => String(s || '').trim().toLowerCase();
 
