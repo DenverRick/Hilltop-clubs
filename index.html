@@ -289,6 +289,12 @@
     $('#toggle-today').addEventListener('click', () => renderDay('today'));
     $('#toggle-tomorrow').addEventListener('click', () => renderDay('tomorrow'));
 
+    // Remember which Denver day we rendered, so a page left open overnight can
+    // self-correct when it regains focus (see maybeRefreshEvents below).
+    let loadedToday = null;
+    let refreshingEvents = false;
+    const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
     async function renderEvents() {
       try {
         const { events, today } = await ClubsAPI.getWeekEvents();
@@ -300,18 +306,39 @@
         const p = (n) => String(n).padStart(2, '0');
         const tomorrow = `${tomorrowDate.getFullYear()}-${p(tomorrowDate.getMonth() + 1)}-${p(tomorrowDate.getDate())}`;
 
+        // Weekday in the toggle labels — derived from the API's Denver date, not
+        // the browser clock — so a stale (left-open) page reads obviously wrong.
+        const wd = (y, m, d) => WEEKDAYS[new Date(y, m - 1, d).getDay()];
+        $('#toggle-today').textContent = `Today · ${wd(ty, tm, td)}`;
+        $('#toggle-tomorrow').textContent = `Tomorrow · ${wd(tomorrowDate.getFullYear(), tomorrowDate.getMonth() + 1, tomorrowDate.getDate())}`;
+
         eventsByDay.today = events.filter((e) => e.date === today);
         eventsByDay.tomorrow = events.filter((e) => e.date === tomorrow);
+        loadedToday = today;
 
         // Only show the section if there's something today or tomorrow.
         if (!eventsByDay.today.length && !eventsByDay.tomorrow.length) return;
-        renderDay('today');
+        renderDay(currentDay);
         $('#events-view').hidden = false;
       } catch (err) {
         // Silent — landing page still works without the events section.
         console.warn('week-events failed:', err);
       }
     }
+
+    // If the page was left open and the Denver date has since rolled over, the
+    // Today/Tomorrow buttons are stale. On regaining focus, re-fetch and re-render
+    // only when the day actually changed.
+    async function maybeRefreshEvents() {
+      if (refreshingEvents || loadedToday === null) return;
+      refreshingEvents = true;
+      try {
+        const { today } = await ClubsAPI.getWeekEvents();
+        if (today !== loadedToday) await renderEvents();
+      } catch { /* ignore — keep showing what we have */ }
+      finally { refreshingEvents = false; }
+    }
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) maybeRefreshEvents(); });
 
     function matchClub(club, q) {
       const hay = [club.name, club.blurb, club.category, ...(club.tags || [])].join(' ').toLowerCase();

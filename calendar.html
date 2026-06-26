@@ -14,19 +14,33 @@
   <style>
     /* Calendar page: week sections grouped into day blocks. Reuses the shared
        .event-card / .event-modal styles from styles.css; green-accented. */
-    .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    .cal-search-wrap { display: flex; align-items: center; gap: 8px; flex: 1 1 240px; max-width: 380px; }
-    .cal-search-wrap .search-bar { flex: 1 1 auto; min-width: 0; }
+    /* Title + search + hint + week-nav pin to the top of the viewport (the hero
+       above scrolls away first) so only the event list scrolls under them.
+       Opaque background + negative margins span main's padding edge-to-edge. */
+    .cal-sticky {
+      position: sticky; top: 0; z-index: 20;
+      background: #ecf5ec;
+      margin: 0 -1.25rem; padding: 0.6rem 1.25rem 0.75rem;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+    .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 0.4rem; }
+    .cal-search-wrap { display: flex; align-items: center; gap: 8px; flex: 1 1 240px; max-width: 420px; flex-wrap: wrap; }
+    .cal-search-wrap .search-bar { flex: 1 1 auto; min-width: 0; margin-bottom: 0; }
     .cal-search-count { font-size: 0.85rem; color: #555; white-space: nowrap; }
+    .cal-hint { font-size: 0.85rem; color: #555; margin: 0 0 0.55rem; }
+    .cal-match-nav { display: flex; gap: 6px; }
+    .cal-week-nav { display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .cal-week-label { font-weight: 700; color: #1d6a3a; min-width: 9ch; text-align: center; }
+    .cal-week-btn, .cal-mini-btn {
+      border: 2px solid #1d6a3a; background: #fff; color: #1d6a3a;
+      border-radius: 999px; font-weight: 700; cursor: pointer;
+    }
+    .cal-week-btn { padding: 0.4rem 0.9rem; min-height: 44px; }
+    .cal-mini-btn { padding: 0.3rem 0.7rem; min-height: 40px; font-size: 0.85rem; }
+    .cal-week-btn:disabled { opacity: 0.4; cursor: default; }
     /* Highlight the event the club search jumped to. */
     .event-card.cal-hit { outline: 3px solid #1d6a3a; outline-offset: 1px; box-shadow: 0 0 0 4px rgba(29, 106, 58, 0.18); }
     .cal-intro { margin: 0 0 1rem; color: #555; }
-    .cal-week { margin: 0 0 1.75rem; }
-    .cal-week-head {
-      font-size: 1.05rem; font-weight: 700; color: #1d6a3a;
-      border-bottom: 2px solid #1d6a3a;
-      padding-bottom: 0.3rem; margin: 0 0 0.85rem;
-    }
     .cal-day { margin: 0 0 1rem; }
     .cal-day-head {
       font-size: 0.95rem; font-weight: 600; color: #333; margin: 0 0 0.5rem;
@@ -53,11 +67,23 @@
 
   <main>
     <a class="footer-link cal-back" href="/">← Back to all clubs</a>
-    <div class="section-head cal-head">
-      <h3>📅 Upcoming club meetings</h3>
-      <div class="cal-search-wrap">
-        <input id="cal-search" class="search-bar search-input" type="search" placeholder="Find a club… (Enter = next)" autocomplete="off" />
-        <span id="cal-search-count" class="cal-search-count" aria-live="polite"></span>
+    <div class="cal-sticky">
+      <div class="section-head cal-head">
+        <h3>📅 Upcoming club meetings</h3>
+        <div class="cal-search-wrap">
+          <input id="cal-search" class="search-bar search-input" type="search" placeholder="Find a club…" autocomplete="off" />
+          <span id="cal-search-count" class="cal-search-count" aria-live="polite"></span>
+          <div class="cal-match-nav" id="cal-match-nav" hidden>
+            <button type="button" id="cal-prev-match" class="cal-mini-btn" aria-label="Previous match">‹ Prev</button>
+            <button type="button" id="cal-next-match" class="cal-mini-btn" aria-label="Next match">Next ›</button>
+          </div>
+        </div>
+      </div>
+      <div class="cal-hint">Type a club name, then press Enter (or “Next ›”) to step through matches.</div>
+      <div class="cal-week-nav">
+        <button type="button" id="cal-prev-week" class="cal-week-btn" aria-label="Previous week">‹ Prev week</button>
+        <span id="cal-week-label" class="cal-week-label" aria-live="polite"></span>
+        <button type="button" id="cal-next-week" class="cal-week-btn" aria-label="Next week">Next week ›</button>
       </div>
     </div>
     <p class="cal-intro">Recurring club meetings and one-off events for the weeks ahead. Tap any meeting to add it to your personal calendar.</p>
@@ -93,9 +119,16 @@
     const $ = (sel) => document.querySelector(sel);
     const escape = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-    // Flat list of every rendered event, so a card's data-idx maps back to the
-    // full record for the modal.
+    // Cross-week state. allEvents is the flat list of EVERY event across all
+    // weeks (global index = a card's data-idx), so search and the modal can
+    // reach events that aren't currently on screen. We render one week at a time.
     let allEvents = [];
+    let eventWeek = [];           // eventWeek[globalIdx] = week index
+    let weekFirstGlobalIdx = [];  // first global idx in each week (events are contiguous per week)
+    let weeksData = [];           // raw weeks from the API
+    let todayDate = null;         // API's Denver "today" (YYYY-MM-DD)
+    let currentWeek = 0;          // week currently in the DOM
+    let activeMatchIdx = -1;      // global idx of the highlighted match, or -1
 
     function eventCardHTML(ev, idx) {
       return `
@@ -148,61 +181,94 @@
       const view = $('#calendar-view');
       try {
         const { weeks, today } = await ClubsAPI.getCalendarEvents();
-        allEvents = [];
-
-        const html = weeks.map((w) => {
-          if (!w.events.length) {
-            return `<section class="cal-week">
-              <div class="cal-week-head">${escape(w.label)}</div>
-              <div class="cal-week-empty">No club meetings this week.</div>
-            </section>`;
-          }
-          // Group the week's events by date (already sorted date→time).
-          const byDate = new Map();
-          for (const ev of w.events) {
-            if (!byDate.has(ev.date)) byDate.set(ev.date, []);
-            byDate.get(ev.date).push(ev);
-          }
-          const days = [...byDate.entries()].map(([date, evs]) => {
-            const isToday = date === today;
-            const cards = evs.map((ev) => {
-              const idx = allEvents.push(ev) - 1;
-              return eventCardHTML(ev, idx);
-            }).join('');
-            return `<div class="cal-day">
-              <div class="cal-day-head">${escape(evs[0].dayLabel)}${isToday ? '<span class="cal-today-badge">TODAY</span>' : ''}</div>
-              <div class="events-grid">${cards}</div>
-            </div>`;
-          }).join('');
-          return `<section class="cal-week">
-            <div class="cal-week-head">${escape(w.label)}</div>
-            ${days}
-          </section>`;
-        }).join('');
-
-        view.innerHTML = html || '<div class="empty">No upcoming club meetings.</div>';
+        weeksData = weeks; todayDate = today;
+        allEvents = []; eventWeek = []; weekFirstGlobalIdx = [];
+        // Assign stable global indices across ALL weeks. Events are contiguous
+        // per week, so weekFirstGlobalIdx lets renderWeek rebuild the same idx.
+        weeks.forEach((w, wi) => {
+          weekFirstGlobalIdx[wi] = allEvents.length;
+          for (const ev of w.events) { const gi = allEvents.push(ev) - 1; eventWeek[gi] = wi; }
+        });
+        if (!weeksData.length) { view.innerHTML = '<div class="empty">No upcoming club meetings.</div>'; return; }
+        currentWeek = resolveDefaultWeek(weeks, today);
+        renderWeek(currentWeek);
       } catch (err) {
         view.innerHTML = `<div class="error">${escape(err.message)}</div>`;
+        $('#cal-prev-week').disabled = true; $('#cal-next-week').disabled = true;
       }
     }
 
-    // Club find: type a club name to jump to its first meeting on the calendar,
-    // then press Enter to step to the next one (wraps around). Nothing is hidden
-    // — matches are scrolled to and highlighted so you can open each (add to
-    // calendar / club info) from the modal.
+    // The week containing `today` (weekStart <= today < next week's start); else 0.
+    function resolveDefaultWeek(weeks, today) {
+      for (let i = 0; i < weeks.length; i++) {
+        const start = weeks[i].weekStart;
+        const end = (i + 1 < weeks.length) ? weeks[i + 1].weekStart : '9999-99-99';
+        if (today >= start && today < end) return i;
+      }
+      return 0;
+    }
+
+    // Render ONE week's day-blocks, using each event's global data-idx so the
+    // modal + search keep working. Re-applies the active match highlight (the
+    // innerHTML rewrite wipes it).
+    function renderWeek(i) {
+      currentWeek = i;
+      const w = weeksData[i];
+      const view = $('#calendar-view');
+      if (!w.events.length) {
+        view.innerHTML = '<div class="cal-week-empty">No club meetings this week.</div>';
+      } else {
+        const byDate = new Map();
+        for (const ev of w.events) {
+          if (!byDate.has(ev.date)) byDate.set(ev.date, []);
+          byDate.get(ev.date).push(ev);
+        }
+        let gi = weekFirstGlobalIdx[i];
+        view.innerHTML = [...byDate.entries()].map(([date, evs]) => {
+          const isToday = date === todayDate;
+          const cards = evs.map((ev) => eventCardHTML(ev, gi++)).join('');
+          return `<div class="cal-day">
+            <div class="cal-day-head">${escape(evs[0].dayLabel)}${isToday ? '<span class="cal-today-badge">TODAY</span>' : ''}</div>
+            <div class="events-grid">${cards}</div>
+          </div>`;
+        }).join('');
+      }
+      $('#cal-week-label').textContent = w.label;
+      $('#cal-prev-week').disabled = (i === 0);
+      $('#cal-next-week').disabled = (i === weeksData.length - 1);
+      reapplyCalHit();
+    }
+
+    // Club find: type a club name to jump to its first meeting anywhere in the
+    // weeks ahead, then Enter (or "Next ›") to step through the rest (wraps). The
+    // matched week is switched into view, the card highlighted and scrolled to.
     let calMatches = [], calMatchPos = -1;
-    function clearCalHits() { document.querySelectorAll('.event-card.cal-hit').forEach((c) => c.classList.remove('cal-hit')); }
+    function clearCalHits() {
+      document.querySelectorAll('.event-card.cal-hit').forEach((c) => c.classList.remove('cal-hit'));
+      activeMatchIdx = -1;
+    }
+    // Re-highlight the active match after a week re-render (innerHTML wipes it).
+    function reapplyCalHit() {
+      if (activeMatchIdx < 0 || eventWeek[activeMatchIdx] !== currentWeek) return;
+      const card = document.querySelector(`.event-card[data-idx="${activeMatchIdx}"]`);
+      if (card) card.classList.add('cal-hit');
+    }
     function updateCalCount() {
-      const c = $('#cal-search-count');
-      if (!c) return;
-      if (!$('#cal-search').value.trim()) { c.textContent = ''; return; }
-      c.textContent = calMatches.length ? `${calMatchPos + 1} of ${calMatches.length}` : 'no matches';
+      const c = $('#cal-search-count'), nav = $('#cal-match-nav');
+      const q = $('#cal-search').value.trim();
+      if (!q) { c.textContent = ''; if (nav) nav.hidden = true; return; }
+      if (!calMatches.length) { c.textContent = 'No matches'; if (nav) nav.hidden = true; return; }
+      c.textContent = `${calMatchPos + 1} of ${calMatches.length} — press Enter for next`;
+      if (nav) nav.hidden = false;
     }
     function gotoCalMatch(pos) {
       clearCalHits();
       if (!calMatches.length) { calMatchPos = -1; updateCalCount(); return; }
       calMatchPos = ((pos % calMatches.length) + calMatches.length) % calMatches.length;
-      const card = document.querySelector(`.event-card[data-idx="${calMatches[calMatchPos]}"]`);
+      const gIdx = calMatches[calMatchPos];
+      activeMatchIdx = gIdx;
+      if (eventWeek[gIdx] !== currentWeek) renderWeek(eventWeek[gIdx]);  // switch to the match's week
+      const card = document.querySelector(`.event-card[data-idx="${gIdx}"]`);
       if (card) { card.classList.add('cal-hit'); card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
       updateCalCount();
     }
@@ -210,7 +276,9 @@
       const q = $('#cal-search').value.trim().toLowerCase();
       calMatches = !q ? [] : allEvents
         .map((e, i) => i)
-        .filter((i) => (allEvents[i].clubName || '').toLowerCase().includes(q) || (allEvents[i].eventName || '').toLowerCase().includes(q));
+        .filter((i) => (allEvents[i].clubName || '').toLowerCase().includes(q)
+          || (allEvents[i].eventName || '').toLowerCase().includes(q)
+          || (allEvents[i].location || '').toLowerCase().includes(q));
     }
     let calSearchTimer;
     $('#cal-search').addEventListener('input', () => {
@@ -223,6 +291,10 @@
       if (!calMatches.length) recomputeCalMatches();
       gotoCalMatch(calMatchPos + 1);
     });
+    $('#cal-prev-match').addEventListener('click', () => { if (!calMatches.length) recomputeCalMatches(); gotoCalMatch(calMatchPos - 1); });
+    $('#cal-next-match').addEventListener('click', () => { if (!calMatches.length) recomputeCalMatches(); gotoCalMatch(calMatchPos + 1); });
+    $('#cal-prev-week').addEventListener('click', () => { if (currentWeek > 0) renderWeek(currentWeek - 1); });
+    $('#cal-next-week').addEventListener('click', () => { if (currentWeek < weeksData.length - 1) renderWeek(currentWeek + 1); });
 
     render();
   </script>

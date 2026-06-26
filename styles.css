@@ -796,6 +796,10 @@ body.pale-green-bg { background: #ecf5ec; }
   padding: 1rem 1.85rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
 }
+/* Both landing CTAs share one solid-blue look so they read as a matched pair
+   (overrides .btn-secondary's outline on the newsletter button, here only). */
+.calendar-cta .btn { background: var(--primary-color); color: #fff; border: 0; }
+.calendar-cta .btn:hover { filter: brightness(0.95); }
 
 /* ---- Leader admin: nav bar across the Meetings / About / Outreach pages ---- */
 .leader-nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; border-bottom: 2px solid var(--border, #e6ddd0); }
