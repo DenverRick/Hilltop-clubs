@@ -24,22 +24,45 @@
     .nl-md code { background: #eef2ee; padding: 0.1rem 0.35rem; border-radius: 4px; }
     .nl-images { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 0.6rem; }
     .nl-images img { width: 320px; max-width: 100%; border-radius: 8px; }
-    .nl-week { margin: 0 0 1rem; }
-    .nl-week-head { font-weight: 700; color: #1d6a3a; margin: 0 0 0.4rem; }
-    .nl-day { margin: 0 0 0.6rem; }
-    .nl-day-head { font-size: 0.9rem; font-weight: 600; color: #333; margin: 0 0 0.35rem; display: flex; align-items: center; gap: 0.5rem; }
     .nl-today-badge { background: #1d6a3a; color: #fff; font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.5rem; border-radius: 999px; letter-spacing: 0.03em; }
-    .nl-flyers { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
-    .nl-flyer { display: block; text-decoration: none; color: inherit; border: 1px solid var(--gray-light, #e0e3e8); border-radius: 10px; overflow: hidden; background: #fff; }
-    .nl-flyer img { width: 100%; display: block; }
-    .nl-flyer span { display: block; padding: 8px 10px; font-weight: 600; }
+    /* Club flyers — compact clickable thumbnails (open the full flyer in a lightbox). */
+    .nl-flyers { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+    .nl-flyer { display: block; width: 100%; text-align: center; border: 1px solid var(--gray-light, #e0e3e8); border-radius: 10px; overflow: hidden; background: #fff; cursor: pointer; font-family: inherit; padding: 0; }
+    .nl-flyer img { width: 100%; height: 150px; object-fit: contain; background: #f3f7f3; display: block; }
+    .nl-flyer span { display: block; padding: 6px 8px; font-weight: 600; font-size: 0.85rem; }
+    /* Flyer lightbox (reuses the .event-modal overlay base for positioning). */
+    .flyer-modal-card { position: relative; background: #fff; border-radius: 14px; padding: 0.75rem; max-width: 92vw; max-height: 92vh; overflow: auto; box-shadow: var(--shadow-hover); z-index: 1; }
+    .flyer-modal-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 0.6rem; }
+    .flyer-modal-card img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+    /* Upcoming meetings — 7-column weekly grid (mirrors the Hilltop Clubhouse calendar). */
+    .nlg-weekbar { background: #1d6a3a; color: #fff; font-weight: 700; text-align: center; padding: 8px 12px; border-radius: 8px 8px 0 0; }
+    .nlg-grid { display: flex; flex-direction: column; gap: 10px; }
+    .nlg-day { background: #fff; border: 1px solid #ccc; border-radius: 6px; overflow: hidden; }
+    .nlg-day.today { border-color: #1d6a3a; box-shadow: 0 0 0 2px rgba(29, 106, 58, 0.18); }
+    .nlg-day-head { background: #fff; color: #555; font-weight: 600; font-size: 0.9rem; padding: 6px 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+    .nlg-day.today .nlg-day-head { background: #eafbef; color: #1d6a3a; border-bottom-color: #1d6a3a; }
+    .nlg-day-events { padding: 6px; }
+    .nlg-event { display: block; width: 100%; text-align: center; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 6px 4px; margin-bottom: 5px; cursor: pointer; font-family: inherit; }
+    .nlg-event:hover { background: #f4f6f8; border-color: #d4dae0; }
+    .nlg-ev-name { display: block; font-weight: 700; color: #1d6a3a; line-height: 1.2; }
+    .nlg-ev-loc, .nlg-ev-time { display: block; font-size: 0.85rem; color: #444; }
+    .nlg-event.cancelled { opacity: 0.6; }
+    .nlg-event.cancelled .nlg-ev-name { text-decoration: line-through; color: #999; }
+    @media (min-width: 700px) {
+      .nlg-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+      .nlg-weekbar { border-radius: 8px; }
+    }
     .nl-anns { padding-left: 1.2rem; line-height: 1.6; }
     .nl-anns a { font-weight: 600; }
     .nl-empty { color: #888; font-style: italic; }
-    #newsletter-view .event-card { border-left-color: #1d6a3a; }
     @media print {
       .nl-back, .site-hero, .site-footer { display: none !important; }
       body { background: #fff; }
+      /* Print only the flyer when printing from its lightbox. */
+      body.printing-flyer * { visibility: hidden; }
+      body.printing-flyer #flyer-modal, body.printing-flyer #flyer-modal img { visibility: visible; }
+      body.printing-flyer #flyer-modal { position: absolute; inset: 0; padding: 0; }
+      body.printing-flyer .flyer-modal-actions, body.printing-flyer .event-modal-backdrop { display: none; }
     }
   </style>
 </head>
@@ -68,6 +91,19 @@
     </div>
   </div>
 
+  <!-- Flyer lightbox — opens the full flyer with a Print button. -->
+  <div id="flyer-modal" class="event-modal" hidden>
+    <div class="event-modal-backdrop" id="flyer-modal-backdrop"></div>
+    <div class="flyer-modal-card" role="dialog" aria-modal="true" aria-label="Club flyer">
+      <div class="flyer-modal-actions">
+        <button id="flyer-print" class="btn btn-primary btn-small" type="button">🖨 Print</button>
+        <a id="flyer-club" class="btn btn-secondary btn-small" href="#">About the club</a>
+        <button id="flyer-modal-close" class="btn btn-secondary btn-small" type="button">✕ Close</button>
+      </div>
+      <img id="flyer-modal-img" src="" alt="" />
+    </div>
+  </div>
+
   <footer class="site-footer">
     <div>
       Hilltop at Inspiration · Aurora, CO ·
@@ -87,17 +123,9 @@
     const $ = (sel) => document.querySelector(sel);
     const escape = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-    let allEvents = [];           // flat list for the modal
+    let allEvents = [];           // flat list for the event modal
     let calData = { weeks: [], today: '' };
-
-    function eventCardHTML(ev, idx) {
-      return `
-        <button class="event-card ${ev.cancelled ? 'cancelled' : ''}" type="button" data-idx="${idx}">
-          <div class="event-card-name">${escape(ev.eventName || ev.clubName)}</div>
-          <div class="event-card-time">${ev.startTime ? escape(ev.startTime) : ''}${ev.cancelled ? ' · Cancelled' : ''}</div>
-          ${ev.location ? `<div class="event-card-loc">${escape(ev.location)}</div>` : ''}
-        </button>`;
-    }
+    let flyerData = [];           // flat list for the flyer lightbox
 
     function openEventModal(ev) {
       const links = ev.cancelled ? null : calendarLinks(ev);
@@ -122,9 +150,32 @@
     function closeEventModal() { $('#event-modal').hidden = true; document.body.style.overflow = ''; }
     $('#event-modal-close').addEventListener('click', closeEventModal);
     $('#event-modal-backdrop').addEventListener('click', closeEventModal);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#event-modal').hidden) closeEventModal(); });
+
+    // Flyer lightbox: open the full flyer with a Print button.
+    function openFlyer(i) {
+      const f = flyerData[i];
+      if (!f) return;
+      $('#flyer-modal-img').src = f.fullUrl || f.flyerUrl;
+      $('#flyer-modal-img').alt = `${f.name} flyer`;
+      $('#flyer-club').href = `/club/${encodeURIComponent(f.slug)}`;
+      $('#flyer-modal').hidden = false;
+      document.body.style.overflow = 'hidden';
+    }
+    function closeFlyer() { $('#flyer-modal').hidden = true; document.body.style.overflow = ''; }
+    $('#flyer-modal-close').addEventListener('click', closeFlyer);
+    $('#flyer-modal-backdrop').addEventListener('click', closeFlyer);
+    $('#flyer-print').addEventListener('click', () => { document.body.classList.add('printing-flyer'); window.print(); });
+    window.addEventListener('afterprint', () => document.body.classList.remove('printing-flyer'));
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (!$('#event-modal').hidden) closeEventModal();
+      if (!$('#flyer-modal').hidden) closeFlyer();
+    });
     $('#newsletter-view').addEventListener('click', (e) => {
-      const card = e.target.closest('.event-card');
+      const flyer = e.target.closest('.nl-flyer');
+      if (flyer) { openFlyer(parseInt(flyer.dataset.flyerIdx, 10)); return; }
+      const card = e.target.closest('.nlg-event');
       if (!card) return;
       const ev = allEvents[parseInt(card.getAttribute('data-idx'), 10)];
       if (ev) openEventModal(ev);
@@ -141,24 +192,42 @@
       </section>`;
     }
 
+    // Upcoming meetings as a 7-column Mon–Sun weekly grid (current week).
     function renderEventsBlock(b) {
-      const weeksHtml = calData.weeks.map((w) => {
-        if (!w.events.length) return '';
-        const byDate = new Map();
-        for (const ev of w.events) { if (!byDate.has(ev.date)) byDate.set(ev.date, []); byDate.get(ev.date).push(ev); }
-        const days = [...byDate.entries()].map(([date, evs]) => {
-          const isToday = date === calData.today;
-          const cards = evs.map((ev) => { const idx = allEvents.push(ev) - 1; return eventCardHTML(ev, idx); }).join('');
-          return `<div class="nl-day"><div class="nl-day-head">${escape(evs[0].dayLabel)}${isToday ? '<span class="nl-today-badge">TODAY</span>' : ''}</div><div class="events-grid">${cards}</div></div>`;
+      const w = calData.weeks[0];
+      if (!w) return `<section class="nl-block">${blockTitle(b.title, '📅 Upcoming club meetings')}<p class="nl-empty">No club meetings in this window.</p></section>`;
+      const [y, m, d] = w.weekStart.split('-').map(Number);
+      const p = (n) => String(n).padStart(2, '0');
+      const byDate = new Map();
+      for (const ev of w.events) { if (!byDate.has(ev.date)) byDate.set(ev.date, []); byDate.get(ev.date).push(ev); }
+      let cols = '';
+      for (let i = 0; i < 7; i++) {
+        const dt = new Date(y, m - 1, d + i);
+        const iso = `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`;
+        const isToday = iso === calData.today;
+        const label = dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        const chips = (byDate.get(iso) || []).map((ev) => {
+          const idx = allEvents.push(ev) - 1;
+          return `<button class="nlg-event ${ev.cancelled ? 'cancelled' : ''}" type="button" data-idx="${idx}">
+            <span class="nlg-ev-name">${escape(ev.eventName || ev.clubName)}</span>
+            ${ev.location ? `<span class="nlg-ev-loc">${escape(ev.location)}</span>` : ''}
+            <span class="nlg-ev-time">${ev.startTime ? escape(ev.startTime) : ''}${ev.cancelled ? ' · Cancelled' : ''}</span>
+          </button>`;
         }).join('');
-        return `<div class="nl-week"><div class="nl-week-head">${escape(w.label)}</div>${days}</div>`;
-      }).join('');
-      return `<section class="nl-block">${blockTitle(b.title, '📅 Upcoming club meetings')}${weeksHtml || '<p class="nl-empty">No club meetings in this window.</p>'}</section>`;
+        cols += `<div class="nlg-day${isToday ? ' today' : ''}">
+          <div class="nlg-day-head">${escape(label)}${isToday ? '<span class="nl-today-badge">TODAY</span>' : ''}</div>
+          <div class="nlg-day-events">${chips}</div>
+        </div>`;
+      }
+      return `<section class="nl-block">${blockTitle(b.title, '📅 Upcoming club meetings')}
+        <div class="nlg-weekbar">${escape(w.label)}</div>
+        <div class="nlg-grid">${cols}</div></section>`;
     }
 
     function renderFlyersBlock(b, flyers) {
+      flyerData = flyers;
       const grid = flyers.length
-        ? `<div class="nl-flyers">${flyers.map((c) => `<a class="nl-flyer" href="/club/${encodeURIComponent(c.slug)}"><img src="${escape(c.flyerUrl)}" alt="${escape(c.name)} flyer" loading="lazy" /><span>${escape(c.name)}</span></a>`).join('')}</div>`
+        ? `<div class="nl-flyers">${flyers.map((c, i) => `<button class="nl-flyer" type="button" data-flyer-idx="${i}"><img src="${escape(c.flyerUrl)}" alt="${escape(c.name)} flyer" loading="lazy" /><span>${escape(c.name)}</span></button>`).join('')}</div>`
         : '<p class="nl-empty">No club flyers yet.</p>';
       return `<section class="nl-block">${blockTitle(b.title, '📣 Club flyers')}${grid}</section>`;
     }
@@ -173,7 +242,7 @@
     async function render() {
       const view = $('#newsletter-view');
       try {
-        const [nl, cal] = await Promise.all([ClubsAPI.getNewsletter(), ClubsAPI.getCalendarEvents(2)]);
+        const [nl, cal] = await Promise.all([ClubsAPI.getNewsletter(), ClubsAPI.getCalendarEvents(1)]);
         allEvents = [];
         calData = cal || { weeks: [], today: '' };
         const html = (nl.blocks || []).map((b) => {

@@ -51,7 +51,11 @@ export async function handler(event) {
     const slug = f['Slug'] || '';
     if (isFlyerActive(f)) {
       const flyer = f['Promo Flyer'][0];
-      clubFlyers.push({ name, slug, flyerUrl: flyer.thumbnails?.large?.url || flyer.url || '' });
+      clubFlyers.push({
+        name, slug,
+        flyerUrl: flyer.thumbnails?.large?.url || flyer.url || '',  // thumbnail (display)
+        fullUrl: flyer.url || flyer.thumbnails?.full?.url || '',     // full size (lightbox/print)
+      });
     }
     if (f['Active'] && isAnnouncementActive(f)) announcements.push({ name, slug, text: String(f['Announcement']).trim() });
   }
