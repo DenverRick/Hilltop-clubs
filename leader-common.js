@@ -437,8 +437,8 @@ function setRsvpStatus(id, kind, message) {
 }
 function rsvpRender(data) {
   if (data.dashboardUrl) {
-    hide('rsvp-dashboard-block', false);
-    const link = el('rsvp-dashboard-link'); if (link) link.href = data.dashboardUrl;
+    const link = el('rsvp-dashboard-link');
+    if (link) { link.href = data.dashboardUrl; link.hidden = false; }
   }
   // The RSVP app reports how many members it already has (but never the list
   // itself — privacy). Show the count so a returning leader knows they're set

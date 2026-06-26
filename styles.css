@@ -787,6 +787,7 @@ button, .btn {
 
 /* Pale-green page background for the landing + calendar pages. */
 body.pale-green-bg { background: #ecf5ec; }
+body.pale-blue-bg { background: #eef3fb; }
 
 /* Prominent "full calendar" call-to-action under the hero on the landing page. */
 .calendar-cta { text-align: center; margin: 1.25rem 0 1.75rem; }
@@ -802,13 +803,14 @@ body.pale-green-bg { background: #ecf5ec; }
 .calendar-cta .btn:hover { filter: brightness(0.95); }
 
 /* ---- Leader admin: nav bar across the Meetings / About / Outreach pages ---- */
-.leader-nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; border-bottom: 2px solid var(--border, #e6ddd0); }
+.leader-nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; border-bottom: 2px solid #cfe0f3; }
 .leader-nav-link {
   padding: 9px 16px; border-radius: 8px 8px 0 0; text-decoration: none;
-  font-weight: 600; color: var(--primary-color, #1d5fa8); border: 1px solid transparent; border-bottom: none;
+  font-weight: 600; color: var(--primary-color, #1d5fa8);
+  background: #fff; border: 1px solid #cfe0f3; border-bottom: none;
 }
-.leader-nav-link:hover { background: #eef4fb; }
-.leader-nav-link.active { background: var(--primary-color, #1d5fa8); color: #fff; }
+.leader-nav-link:hover { background: #dbeafe; }
+.leader-nav-link.active { background: var(--primary-color, #1d5fa8); color: #fff; border-color: var(--primary-color, #1d5fa8); }
 
 /* RSVP setup section (talks to the separate RSVP app). */
 .rsvp-setup { border: 1px solid var(--border, #d9dee5); border-radius: 8px; padding: 12px 14px; margin: 14px 0; background: #f7f9fc; }

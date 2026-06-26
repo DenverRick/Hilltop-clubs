@@ -12,7 +12,7 @@
   <title>My Club — Member RSVP</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
-<body>
+<body class="pale-blue-bg">
   <header class="site-header">
     <h1><a href="/">Hilltop Clubs</a></h1>
     <div class="tagline">Club leader — update your listing</div>
@@ -77,7 +77,10 @@
         <!-- RSVP setup. Talks to the separate RSVP app via /api/leader-rsvp-setup.
              Logging in provisions this club's RSVP record (rsvpRefresh on login). -->
         <section class="rsvp-setup">
-          <h2 style="margin:0 0 4px; font-size:1.1rem;">📋 Member RSVP — collect attendance</h2>
+          <div class="rsvp-head" style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin:0 0 4px;">
+            <h2 style="margin:0; font-size:1.1rem;">📋 Member RSVP — collect attendance</h2>
+            <a id="rsvp-dashboard-link" class="btn btn-primary" href="#" target="_blank" rel="noopener" hidden>Open my RSVP dashboard ↗</a>
+          </div>
           <p class="field-hint" style="margin-top:0;">
             Instead of email/TeamReach replies, send members a one-tap RSVP link and watch a live
             headcount. Set this up once, then manage events from your RSVP dashboard.
@@ -85,7 +88,7 @@
           <div id="rsvp-status" class="form-status" hidden></div>
 
           <div class="rsvp-block">
-            <div class="rsvp-block-title">1. Your members</div>
+            <div class="rsvp-block-title">Your members</div>
             <div id="rsvp-member-count" class="form-status" hidden></div>
             <label>Paste member email addresses (any separator — commas, spaces, or one per line)
               <textarea id="rsvp-emails" rows="4" placeholder="alice@example.com, bob@example.com&#10;carol@example.com"></textarea>
@@ -101,11 +104,6 @@
             <div id="rsvp-import-status" class="form-status" hidden></div>
           </div>
 
-          <div class="rsvp-block" id="rsvp-dashboard-block" hidden>
-            <div class="rsvp-block-title">2. Your RSVP dashboard</div>
-            <p class="field-hint">Set your event and send invites here (bookmark it):</p>
-            <a id="rsvp-dashboard-link" href="#" target="_blank" rel="noopener">Open my RSVP dashboard ↗</a>
-          </div>
         </section>
 
         <div id="status" class="form-status" hidden></div>
