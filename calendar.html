@@ -12,8 +12,8 @@
   <title>Club Calendar — Hilltop Clubs</title>
   <link rel="stylesheet" href="/styles.css" />
   <style>
-    /* Calendar page: week sections grouped into day blocks. Reuses the shared
-       .event-card / .event-modal styles from styles.css; green-accented. */
+    /* Calendar page: one week shown as a 7-column day grid (Hilltop Clubhouse
+       format). Reuses the shared .event-card / .event-modal styles; green-accented. */
     /* Title + search + hint + week-nav pin to the top of the viewport (the hero
        above scrolls away first) so only the event list scrolls under them.
        Opaque background + negative margins span main's padding edge-to-edge. */
@@ -41,19 +41,26 @@
     /* Highlight the event the club search jumped to. */
     .event-card.cal-hit { outline: 3px solid #1d6a3a; outline-offset: 1px; box-shadow: 0 0 0 4px rgba(29, 106, 58, 0.18); }
     .cal-intro { margin: 0 0 1rem; color: #555; }
-    .cal-day { margin: 0 0 1rem; }
-    .cal-day-head {
-      font-size: 0.95rem; font-weight: 600; color: #333; margin: 0 0 0.5rem;
-      display: flex; align-items: center; gap: 0.5rem;
-    }
     .cal-today-badge {
       background: #1d6a3a; color: #fff; font-size: 0.7rem;
       font-weight: 700; padding: 0.1rem 0.5rem; border-radius: 999px; letter-spacing: 0.03em;
     }
-    /* Darker-green left accent bar on calendar event cards (overrides the
-       shared blue accent on this page only). */
-    #calendar-view .event-card { border-left-color: #1d6a3a; }
-    .cal-week-empty { color: #888; font-style: italic; margin: 0 0 0.5rem; }
+    /* Weekly 7-column grid (the familiar Hilltop Clubhouse calendar format).
+       Stacks to a single column on phones. */
+    .cal-grid { display: flex; flex-direction: column; gap: 10px; }
+    .cal-col { background: #fff; border: 1px solid #ccc; border-radius: 6px; overflow: hidden; }
+    .cal-col.today { border-color: #1d6a3a; box-shadow: 0 0 0 2px rgba(29, 106, 58, 0.18); }
+    .cal-col-head { background: #fff; color: #555; font-weight: 600; font-size: 0.95rem; padding: 6px 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+    .cal-col.today .cal-col-head { background: #eafbef; color: #1d6a3a; border-bottom-color: #1d6a3a; }
+    .cal-col-events { padding: 6px; }
+    /* Center the event chips, clubhouse-style green name, no left accent bar. */
+    #calendar-view .event-card { background: transparent; border: 1px solid transparent; text-align: center; padding: 6px 4px; margin-bottom: 4px; box-shadow: none; }
+    #calendar-view .event-card:hover { background: #f4f6f8; border-color: #d4dae0; box-shadow: none; transform: none; }
+    #calendar-view .event-card-name { color: #1d6a3a; }
+    #calendar-view .event-card-time, #calendar-view .event-card-loc { color: #444; }
+    @media (min-width: 760px) {
+      .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; align-items: start; }
+    }
     .cal-back { display: inline-block; margin: 0 0 1rem; }
   </style>
 </head>
@@ -134,8 +141,8 @@
       return `
         <button class="event-card ${ev.cancelled ? 'cancelled' : ''}" type="button" data-idx="${idx}">
           <div class="event-card-name">${escape(ev.eventName || ev.clubName)}</div>
-          <div class="event-card-time">${ev.startTime ? escape(ev.startTime) : ''}${ev.cancelled ? ' · Cancelled' : ''}</div>
           ${ev.location ? `<div class="event-card-loc">${escape(ev.location)}</div>` : ''}
+          <div class="event-card-time">${ev.startTime ? escape(ev.startTime) : ''}${ev.cancelled ? ' · Cancelled' : ''}</div>
         </button>
       `;
     }
@@ -208,31 +215,36 @@
       return 0;
     }
 
-    // Render ONE week's day-blocks, using each event's global data-idx so the
-    // modal + search keep working. Re-applies the active match highlight (the
-    // innerHTML rewrite wipes it).
+    // Render ONE week as a 7-column Mon–Sun grid (familiar Hilltop Clubhouse
+    // format), using each event's global data-idx so the modal + search keep
+    // working. Re-applies the active match highlight (the innerHTML wipes it).
     function renderWeek(i) {
       currentWeek = i;
       const w = weeksData[i];
       const view = $('#calendar-view');
-      if (!w.events.length) {
-        view.innerHTML = '<div class="cal-week-empty">No club meetings this week.</div>';
-      } else {
-        const byDate = new Map();
-        for (const ev of w.events) {
-          if (!byDate.has(ev.date)) byDate.set(ev.date, []);
-          byDate.get(ev.date).push(ev);
-        }
-        let gi = weekFirstGlobalIdx[i];
-        view.innerHTML = [...byDate.entries()].map(([date, evs]) => {
-          const isToday = date === todayDate;
-          const cards = evs.map((ev) => eventCardHTML(ev, gi++)).join('');
-          return `<div class="cal-day">
-            <div class="cal-day-head">${escape(evs[0].dayLabel)}${isToday ? '<span class="cal-today-badge">TODAY</span>' : ''}</div>
-            <div class="events-grid">${cards}</div>
-          </div>`;
-        }).join('');
+      const [y, m, d] = w.weekStart.split('-').map(Number);
+      const p = (n) => String(n).padStart(2, '0');
+      const byDate = new Map();
+      for (const ev of w.events) {
+        if (!byDate.has(ev.date)) byDate.set(ev.date, []);
+        byDate.get(ev.date).push(ev);
       }
+      // gi walks the week's contiguous global indices in date→time order — the
+      // same order render() assigned them — so data-idx round-trips to allEvents.
+      let gi = weekFirstGlobalIdx[i];
+      let cols = '';
+      for (let k = 0; k < 7; k++) {
+        const dt = new Date(y, m - 1, d + k);
+        const iso = `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`;
+        const isToday = iso === todayDate;
+        const label = dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        const chips = (byDate.get(iso) || []).map((ev) => eventCardHTML(ev, gi++)).join('');
+        cols += `<div class="cal-col${isToday ? ' today' : ''}">
+          <div class="cal-col-head">${escape(label)}${isToday ? '<span class="cal-today-badge">TODAY</span>' : ''}</div>
+          <div class="cal-col-events">${chips}</div>
+        </div>`;
+      }
+      view.innerHTML = `<div class="cal-grid">${cols}</div>`;
       $('#cal-week-label').textContent = w.label;
       $('#cal-prev-week').disabled = (i === 0);
       $('#cal-next-week').disabled = (i === weeksData.length - 1);
