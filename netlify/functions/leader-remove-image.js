@@ -6,15 +6,13 @@
 // the upload functions; only 'flyer' and 'thumbnail' targets are permitted, so
 // a crafted request can't blank arbitrary fields.
 
-import { preflight, json, env, airtableFetch, escapeFormulaString } from './_airtable.js';
+import { preflight, json, env, airtableFetch, escapeFormulaString, leaderEmailMatches } from './_airtable.js';
 
 // target key → Airtable attachment field name.
 const FIELD_BY_TARGET = {
   flyer: 'Promo Flyer',
   thumbnail: 'Thumbnail Image',
 };
-
-const normalize = (s) => String(s || '').trim().toLowerCase();
 
 export async function handler(event) {
   const pre = preflight(event);
@@ -41,7 +39,7 @@ export async function handler(event) {
   const record = lookup.data.records?.[0];
 
   const leaderEmail = record?.fields?.['Leader Email'];
-  if (!record || !leaderEmail || normalize(submitter_email) !== normalize(leaderEmail)) {
+  if (!record || !leaderEmail || !leaderEmailMatches(submitter_email, leaderEmail)) {
     return json(403, { error: 'Email does not match the leader on file for this club.' });
   }
 

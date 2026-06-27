@@ -7,9 +7,7 @@
 // club's recordId; `Club` is server-forced on create (never trusted from the
 // client). Action-dispatched POST: { slug, submitter_email, action, ...payload }.
 
-import { preflight, json, env, airtableFetch, escapeFormulaString, CACHE } from './_airtable.js';
-
-const normalize = (s) => String(s || '').trim().toLowerCase();
+import { preflight, json, env, airtableFetch, escapeFormulaString, CACHE, leaderEmailMatches } from './_airtable.js';
 
 // Fields a leader may set on a ClubEvents row. `Club` is intentionally absent —
 // it's forced to the authenticated club on create and never changed.
@@ -51,7 +49,7 @@ async function verifyLeader(e, slug, submitter_email) {
   const record = lookup.data.records?.[0];
   const leaderEmail = record?.fields?.['Leader Email'];
   // Generic 403 — don't reveal whether the club or the email was the mismatch.
-  if (!record || !leaderEmail || normalize(submitter_email) !== normalize(leaderEmail)) {
+  if (!record || !leaderEmail || !leaderEmailMatches(submitter_email, leaderEmail)) {
     return { error: json(403, { error: "That email doesn't match the leader on file for this club." }, { 'Cache-Control': CACHE.NEVER }) };
   }
   return { clubId: record.id };

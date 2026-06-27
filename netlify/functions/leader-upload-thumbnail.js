@@ -11,13 +11,11 @@
 // gets an Airtable automation notification on each row update and can clear
 // a problematic image manually.
 
-import { preflight, json, env, airtableFetch, escapeFormulaString } from './_airtable.js';
+import { preflight, json, env, airtableFetch, escapeFormulaString, leaderEmailMatches } from './_airtable.js';
 
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB. Netlify sync function payload limit is ~6 MB.
 const THUMBNAIL_FIELD_ID = 'fldoEn5p1Y1lp3WNa'; // Clubs.Thumbnail Image
-
-const normalize = (s) => String(s || '').trim().toLowerCase();
 
 export async function handler(event) {
   const pre = preflight(event);
@@ -55,7 +53,7 @@ export async function handler(event) {
 
   // Generic 403 — same posture as leader-update.js.
   const leaderEmail = record?.fields?.['Leader Email'];
-  if (!record || !leaderEmail || normalize(submitter_email) !== normalize(leaderEmail)) {
+  if (!record || !leaderEmail || !leaderEmailMatches(submitter_email, leaderEmail)) {
     return json(403, { error: 'Email does not match the leader on file for this club.' });
   }
 

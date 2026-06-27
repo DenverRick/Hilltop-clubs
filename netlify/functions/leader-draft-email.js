@@ -5,7 +5,7 @@
 // event, prompts Claude to produce a short subject + body, returns them
 // as JSON for the form to surface and feed into a mailto link.
 
-import { preflight, json, env, airtableFetch, escapeFormulaString, CACHE } from './_airtable.js';
+import { preflight, json, env, airtableFetch, escapeFormulaString, CACHE, leaderEmailMatches } from './_airtable.js';
 import { computeUpcomingEvents } from './_events.js';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
@@ -13,7 +13,6 @@ const ANTHROPIC_VERSION = '2023-06-01';
 const MODEL = 'claude-sonnet-4-5';
 const MAX_TOKENS = 700;
 
-const normalize = (s) => String(s || '').trim().toLowerCase();
 const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function buildPrompt({
@@ -108,7 +107,7 @@ export async function handler(event) {
   if (!lookup.ok) return json(lookup.status, { error: 'Airtable error', details: lookup.data });
   const clubRecord = lookup.data.records?.[0];
   const leaderEmail = clubRecord?.fields?.['Leader Email'];
-  if (!clubRecord || !leaderEmail || normalize(submitter_email) !== normalize(leaderEmail)) {
+  if (!clubRecord || !leaderEmail || !leaderEmailMatches(submitter_email, leaderEmail)) {
     return json(403, { error: 'Email does not match the leader on file for this club.' });
   }
 
