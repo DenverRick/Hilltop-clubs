@@ -103,3 +103,17 @@ export function escapeFormulaString(s) {
   // Airtable formula strings escape single quotes by doubling them, plus backslashes.
   return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
+
+// Case-insensitive match of a submitter email against a club's "Leader Email"
+// field, which may hold MORE THAN ONE address (comma/semicolon separated) so a
+// club with co-leaders can have several people who each log in with their own
+// address. Single-address fields are unaffected.
+export function leaderEmailMatches(submitterEmail, leaderField) {
+  const submitter = String(submitterEmail || '').trim().toLowerCase();
+  if (!submitter) return false;
+  return String(leaderField || '')
+    .split(/[,;]/)
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(submitter);
+}

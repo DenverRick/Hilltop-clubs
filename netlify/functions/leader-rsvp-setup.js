@@ -10,9 +10,7 @@
 //   import      -> import-members  { emails }
 //   credentials -> save-credentials { gmailUser, appPassword }
 
-import { preflight, json, env, airtableFetch, escapeFormulaString, CACHE } from './_airtable.js';
-
-const normalize = (s) => String(s || '').trim().toLowerCase();
+import { preflight, json, env, airtableFetch, escapeFormulaString, CACHE, leaderEmailMatches } from './_airtable.js';
 
 export async function handler(event) {
   const pre = preflight(event);
@@ -48,7 +46,7 @@ export async function handler(event) {
   if (!lookup.ok) return json(lookup.status, { error: 'Airtable error', details: lookup.data });
   const record = lookup.data.records?.[0];
   const leaderEmail = record?.fields?.['Leader Email'];
-  if (!record || !leaderEmail || normalize(submitter_email) !== normalize(leaderEmail)) {
+  if (!record || !leaderEmail || !leaderEmailMatches(submitter_email, leaderEmail)) {
     return json(403, { error: 'Email does not match the leader on file for this club.' },
       { 'Cache-Control': CACHE.NEVER });
   }

@@ -1,4 +1,4 @@
-import { preflight, json, env, airtableFetch, escapeFormulaString } from './_airtable.js';
+import { preflight, json, env, airtableFetch, escapeFormulaString, leaderEmailMatches } from './_airtable.js';
 
 // Fields a club leader is allowed to update on their own row.
 // Anything not in this list is silently dropped before the PATCH.
@@ -21,8 +21,6 @@ const ALLOWED_FIELDS = new Set([
   'Announcement',
   'Announcement Expires',
 ]);
-
-const normalize = (s) => String(s || '').trim().toLowerCase();
 
 export async function handler(event) {
   const pre = preflight(event);
@@ -54,7 +52,7 @@ export async function handler(event) {
   // Generic 403 whether the club is missing or the email doesn't match.
   // We don't tell the caller which — they shouldn't be able to enumerate either.
   const leaderEmail = record?.fields?.['Leader Email'];
-  if (!record || !leaderEmail || normalize(submitter_email) !== normalize(leaderEmail)) {
+  if (!record || !leaderEmail || !leaderEmailMatches(submitter_email, leaderEmail)) {
     return json(403, { error: 'Email does not match the leader on file for this club.' });
   }
 

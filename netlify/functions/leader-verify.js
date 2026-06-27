@@ -11,9 +11,7 @@
 // intentionally confirms a match — that's the whole point of a login step.
 // Acceptable for a residents-only club directory; the tradeoff was approved.
 
-import { preflight, json, env, airtableFetch, escapeFormulaString, CACHE } from './_airtable.js';
-
-const normalize = (s) => String(s || '').trim().toLowerCase();
+import { preflight, json, env, airtableFetch, escapeFormulaString, CACHE, leaderEmailMatches } from './_airtable.js';
 
 export async function handler(event) {
   const pre = preflight(event);
@@ -41,7 +39,7 @@ export async function handler(event) {
   const record = lookup.data.records?.[0];
 
   const leaderEmail = record?.fields?.['Leader Email'];
-  if (!record || !leaderEmail || normalize(submitter_email) !== normalize(leaderEmail)) {
+  if (!record || !leaderEmail || !leaderEmailMatches(submitter_email, leaderEmail)) {
     return json(403, { error: "That email doesn't match the leader on file for this club. Double-check the address, or contact Rick if you think it's wrong." }, { 'Cache-Control': CACHE.NEVER });
   }
 
