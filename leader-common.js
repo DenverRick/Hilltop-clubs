@@ -60,11 +60,14 @@ function rememberLogin(slug, email) {
 }
 function refreshForgetButton() { hide('forget-logins', Object.keys(readLogins()).length === 0); }
 function selectClubBySlug(slug) {
-  const name = slugToName.get(slug);
-  if (!name) return false;
-  setVal('club-search', name);
+  if (!slug) return false;
   setVal('slug', slug);
   updateNavSlug(slug);
+  const name = slugToName.get(slug);
+  // A hidden club reached via a ?slug= deep-link won't be in the active picker
+  // list, so we won't know its display name — show a readable fallback derived
+  // from the slug so the field isn't blank, and still let login proceed.
+  setVal('club-search', name || slug.replace(/-/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase()));
   return true;
 }
 function initSavedLogin() {
@@ -92,6 +95,9 @@ function resolveSlug() {
     const matches = [...nameToSlug.entries()].filter(([name]) => name.startsWith(typed));
     if (matches.length === 1) slug = matches[0][1];
   }
+  // Fall back to a slug already set from a ?slug= deep-link, so a HIDDEN club
+  // (absent from the active picker list) can still log in via its direct URL.
+  if (!slug) slug = getVal('slug') || '';
   setVal('slug', slug);
   updateNavSlug(slug);
   return slug;
