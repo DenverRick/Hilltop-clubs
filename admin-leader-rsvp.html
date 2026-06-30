@@ -90,17 +90,13 @@
           <div class="rsvp-block">
             <div class="rsvp-block-title">Your members</div>
             <div id="rsvp-member-count" class="form-status" hidden></div>
-            <label>Paste member email addresses (any separator — commas, spaces, or one per line)
+            <p class="field-hint" style="margin-top:0;">Add members two ways — upload a spreadsheet, or paste addresses. New ones are added; duplicates are skipped automatically. (Send members the RSVP intro from your RSVP dashboard.)</p>
+            <input type="file" id="rsvp-file" accept=".xlsx,.xls,.csv" hidden>
+            <button class="btn btn-secondary" id="rsvp-file-btn" type="button">⬆ Upload spreadsheet (.xlsx / .csv)</button>
+            <label style="display:block; margin-top:12px;">Or paste member email addresses (any separator — commas, spaces, or one per line)
               <textarea id="rsvp-emails" rows="4" placeholder="alice@example.com, bob@example.com&#10;carol@example.com"></textarea>
             </label>
-            <div class="rsvp-actions" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
-              <input type="file" id="rsvp-file" accept=".xlsx,.xls,.csv" hidden>
-              <button class="btn btn-secondary" id="rsvp-file-btn" type="button">Upload spreadsheet (.xlsx / .csv)</button>
-              <button class="btn btn-secondary" id="rsvp-import-btn" type="button">Import members</button>
-              <button class="btn btn-secondary" id="rsvp-email-members-btn" type="button">Email members about RSVP</button>
-              <button class="btn btn-secondary" id="rsvp-howto-btn" type="button">Email members how to RSVP</button>
-            </div>
-            <span class="field-hint">The two "Email members" buttons open a ready-to-edit email in your own mail app — pre-filled with your club name and your name, with the members above as BCC. "About RSVP" announces the change; "how to RSVP" is a short how-it-works note (good for new members too).</span>
+            <button class="btn btn-secondary" id="rsvp-import-btn" type="button">Import pasted addresses</button>
             <div id="rsvp-import-status" class="form-status" hidden></div>
           </div>
 

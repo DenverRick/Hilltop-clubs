@@ -128,13 +128,11 @@ function clearFormFields() {
   setMediaPreview('flyer', '', 'Current flyer:');
   setVal('draft-context', '');
 }
-let clubLeaderName = '';   // from Airtable; used to sign off the member RSVP emails
 async function loadCurrentValues(slug) {
   if (!slug) { clearFormFields(); return; }
   setStatus('success', 'Loading current values…');
   try {
     const { club } = await ClubsAPI.getClub(slug);
-    clubLeaderName = club.leaderName || '';
     setVal('Short Blurb', club.blurb || '');
     setVal('Long Description', club.description || '');
     setVal('Vibe / Demographics', club.vibe || '');
@@ -457,7 +455,7 @@ function rsvpRender(data) {
       countEl.className = 'form-status success';
       countEl.textContent =
         `✅ ${rsvpMemberCount} member${rsvpMemberCount === 1 ? '' : 's'} already imported. ` +
-        `Paste addresses below only to add new ones — duplicates are skipped automatically.`;
+        `Add more below only when you have new people — duplicates are skipped automatically.`;
     } else {
       countEl.hidden = true;
     }
@@ -561,60 +559,8 @@ on('#rsvp-file', 'change', async (ev) => {
   }
 });
 
-// Draft a member email in the leader's OWN mail app. To = the leader (a copy in
-// their inbox); BCC = the pasted members (hidden from each other). The RSVP app
-// returns no member list, so the textarea is the source. Club name + sign-off
-// are filled from Airtable (clubLeaderName, set in loadCurrentValues).
-function draftMemberEmail(buildSubject, buildBody) {
-  const submitter_email = getVal('submitter_email').trim();
-  const bcc = getVal('rsvp-emails').split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean).join(',');
-  if (!bcc) {
-    // The email goes to the members in the box above — but for privacy the RSVP
-    // app never sends the saved list back here, so an already-imported leader
-    // still has to paste the addresses in to email them. Say so explicitly.
-    const noun = rsvpMemberCount === 1 ? '1 member is' : `${rsvpMemberCount} members are`;
-    const msg = rsvpMemberCount > 0
-      ? `Your ${noun} imported, but for privacy their addresses aren't kept on this page. Paste the list back in above, then click this to email them.`
-      : "Paste your members' emails above first, then click this to draft the email.";
-    setRsvpStatus('rsvp-import-status', 'error', msg);
-    return;
-  }
-  const clubName = slugToName.get(getVal('slug')) || 'our club';
-  const signoff = clubLeaderName || '[Your name]';
-  const subject = buildSubject({ clubName, signoff });
-  const body = buildBody({ clubName, signoff });
-  window.location.href =
-    `mailto:${encodeURIComponent(submitter_email)}?bcc=${encodeURIComponent(bcc)}` +
-    `&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-}
-// The one-time "we're starting RSVP" announcement.
-on('#rsvp-email-members-btn', 'click', () => draftMemberEmail(
-  ({ clubName }) => `Introducing one-tap RSVP for ${clubName}`,
-  ({ clubName, signoff }) => `Hi ${clubName} members,
-
-We're trying something new to make RSVPs easier. Instead of replying to an email or responding on TeamReach, you'll get a personal link that lets you RSVP in one tap — and I can see the headcount update in real time.
-
-Here's what to expect:
-
-You'll receive an email from HilltopClubs2026@gmail.com with the subject line "${clubName} — RSVP for [event]." It may land in your spam folder the first time. If it does, please open it and click "Not Spam" — that tells Gmail it's safe, and future emails will go straight to your inbox.
-
-The email will have a link just for you. One click to say you're coming, one click if you can't make it. That's it — no login, no account, no app to install.
-
-I'll send the RSVP link in the next day or two. Keep an eye out for it, and check spam if you don't see it.
-
-Thanks —
-${signoff}`));
-// The short evergreen "how to handle RSVP" note — good now or for new members.
-on('#rsvp-howto-btn', 'click', () => draftMemberEmail(
-  ({ clubName }) => `How RSVP works for ${clubName}`,
-  ({ clubName, signoff }) => `Hi ${clubName} members,
-
-For our events you'll get an email from HilltopClubs2026@gmail.com with a link that's just for you. Tap it, then tap "I'm coming" or "Can't make it" — no password, no app. Changed your mind? Open the email again and tap the other one.
-
-First time, check your spam folder and click "Not Spam" so future ones reach your inbox.
-
-Thanks —
-${signoff}`));
+// (The member intro/how-to emails moved to the RSVP dashboard — this page is
+// now just for adding members.)
 
 // ---- club-run meeting events (Meetings page) ----
 let evmEvents = [], evmOverrides = [];
