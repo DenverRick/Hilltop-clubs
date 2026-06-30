@@ -484,7 +484,10 @@ function rsvpReset() {
 }
 on('#club-search', 'input', rsvpReset);
 on('#switch-club', 'click', rsvpReset);
-on('#rsvp-import-btn', 'click', async () => {
+// Send whatever is in the paste box to the RSVP app. Shared by the "Import
+// members" button AND the spreadsheet upload (so uploading is one step). Import
+// is idempotent server-side (de-dupes, validates), so re-running is safe.
+async function runRsvpImport() {
   const slug = getVal('slug').trim();
   const submitter_email = getVal('submitter_email').trim();
   const emails = getVal('rsvp-emails').trim();
@@ -502,12 +505,14 @@ on('#rsvp-import-btn', 'click', async () => {
     rsvpRefresh();
   } catch (err) { setRsvpStatus('rsvp-import-status', 'error', err.message); }
   finally { if (btn) btn.disabled = false; }
-});
+}
+on('#rsvp-import-btn', 'click', runRsvpImport);
 
-// ---- spreadsheet upload: parse .xlsx/.csv in the browser, fill the paste box ----
+// ---- spreadsheet upload: parse .xlsx/.csv in the browser, then auto-import ----
 // SheetJS is ~900 KB, so it's vendored at /xlsx.full.min.js and loaded only on
-// first use. The file just populates #rsvp-emails — the leader still reviews and
-// clicks "Import members", reusing the existing import path unchanged.
+// first use. The file populates #rsvp-emails and then imports automatically via
+// runRsvpImport() — leaders kept forgetting the separate "Import members" click,
+// so their rosters never reached the RSVP app.
 let xlsxLoading = null;
 function loadXlsxOnce() {
   if (window.XLSX) return Promise.resolve();
@@ -548,8 +553,7 @@ on('#rsvp-file', 'change', async (ev) => {
     }
     const box = el('rsvp-emails');
     if (box) box.value = emails.join('\n');
-    setRsvpStatus('rsvp-import-status', 'success',
-      `Loaded ${emails.length} address${emails.length === 1 ? '' : 'es'} from ${file.name} — review, then click Import members.`);
+    await runRsvpImport();   // one step — no second click needed (import is idempotent)
   } catch (err) {
     setRsvpStatus('rsvp-import-status', 'error', err.message || 'Could not read that file.');
   } finally {
