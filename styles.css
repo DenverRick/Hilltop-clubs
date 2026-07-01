@@ -817,6 +817,11 @@ body.pale-blue-bg { background: #eef3fb; }
 .rsvp-setup > summary { cursor: pointer; font-size: 1rem; }
 .rsvp-block { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border, #e3e8ef); }
 .rsvp-block-title { font-weight: 600; margin-bottom: 6px; }
+.rsvp-add { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
+.rsvp-add-method { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.rsvp-add-method > label { font-weight: 600; }
+.rsvp-add-method textarea { width: 100%; box-sizing: border-box; }
+.rsvp-add-or { font-weight: 600; color: var(--gray); }
 .rsvp-help { margin: 6px 0; }
 .rsvp-help > summary { cursor: pointer; }
 

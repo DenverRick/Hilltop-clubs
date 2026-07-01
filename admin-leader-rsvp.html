@@ -91,12 +91,21 @@
             <div class="rsvp-block-title">Your members</div>
             <div id="rsvp-member-count" class="form-status" hidden></div>
             <p class="field-hint" style="margin-top:0;">Add members two ways — upload a spreadsheet, or paste addresses. New ones are added; duplicates are skipped automatically. (Send members the RSVP intro from your RSVP dashboard.)</p>
-            <input type="file" id="rsvp-file" accept=".xlsx,.xls,.csv" hidden>
-            <button class="btn btn-secondary" id="rsvp-file-btn" type="button">⬆ Upload spreadsheet (.xlsx / .csv)</button>
-            <label style="display:block; margin-top:12px;">Or paste member email addresses (any separator — commas, spaces, or one per line)
-              <textarea id="rsvp-emails" rows="4" placeholder="alice@example.com, bob@example.com&#10;carol@example.com"></textarea>
-            </label>
-            <button class="btn btn-secondary" id="rsvp-import-btn" type="button">Import pasted addresses</button>
+
+            <div class="rsvp-add">
+              <div class="rsvp-add-method">
+                <input type="file" id="rsvp-file" accept=".xlsx,.xls,.csv" hidden>
+                <button class="btn btn-secondary" id="rsvp-file-btn" type="button">⬆ Upload spreadsheet (.xlsx / .csv)</button>
+              </div>
+
+              <div class="rsvp-add-or">or</div>
+
+              <div class="rsvp-add-method">
+                <label for="rsvp-emails">Paste member email addresses (any separator — commas, spaces, or one per line)</label>
+                <textarea id="rsvp-emails" rows="4" placeholder="alice@example.com, bob@example.com&#10;carol@example.com"></textarea>
+                <button class="btn btn-secondary" id="rsvp-import-btn" type="button">Import pasted addresses</button>
+              </div>
+            </div>
             <div id="rsvp-import-status" class="form-status" hidden></div>
           </div>
 

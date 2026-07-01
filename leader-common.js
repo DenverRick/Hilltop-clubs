@@ -130,6 +130,10 @@ function clearFormFields() {
 }
 async function loadCurrentValues(slug) {
   if (!slug) { clearFormFields(); return; }
+  // Only the About/Events/Outreach pages have club-detail fields to populate.
+  // Pages like RSVP/Help have none — skip the fetch so a failed getClub can't
+  // flash "Couldn't load current values" into their status boxes.
+  if (!el('Short Blurb') && !el('Meeting Day') && !el('Announcement')) return;
   setStatus('success', 'Loading current values…');
   try {
     const { club } = await ClubsAPI.getClub(slug);
